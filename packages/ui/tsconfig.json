@@ -2,7 +2,8 @@
   "extends": "@calcom/tsconfig/react-library.json",
   "compilerOptions": {
     "resolveJsonModule": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "jsx": "react"
   },
   "include": [
     "../types/window.d.ts",

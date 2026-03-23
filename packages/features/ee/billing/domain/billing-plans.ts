@@ -31,42 +31,13 @@ export class BillingPlanService {
       };
     }[]
   ): Promise<BillingPlan> {
+    // Artio Carbon: Always return ENTERPRISE as the default best tier.
+    // If needed to downgrade to a lighter tier (e.g. ORGANIZATIONS), change this return value.
+    return BILLING_PLANS.ENTERPRISE;
+
+    /* Original logic kept for reference:
     if (memberships.length === 0) return BILLING_PLANS.INDIVIDUALS;
-
-    for (const { team, user } of memberships) {
-      if (team.isPlatform || user.isPlatformManaged) {
-        if (PLATFORM_ENTERPRISE_SLUGS.includes(team.slug ?? "")) return BILLING_PLANS.PLATFORM_ENTERPRISE;
-        if (!team.platformBilling) continue;
-
-        return PLATFORM_PLANS_MAP[team.platformBilling.plan] ?? team.platformBilling.plan;
-      }
-      const parentTeamMetadataResult = teamMetadataStrictSchema.safeParse(team.parent?.metadata ?? {});
-      const parentTeamMetadata = parentTeamMetadataResult.success ? parentTeamMetadataResult.data : null;
-      if (
-        team.parent &&
-        team.parent.isOrganization &&
-        parentTeamMetadata?.subscriptionId &&
-        !team.parent.isPlatform
-      ) {
-        return ENTERPRISE_SLUGS.includes(team.parent.slug ?? "")
-          ? BILLING_PLANS.ENTERPRISE
-          : BILLING_PLANS.ORGANIZATIONS;
-      }
-      const teamMetadataResult = teamMetadataStrictSchema.safeParse(team.metadata ?? {});
-      const teamMetadata = teamMetadataResult.success ? teamMetadataResult.data : null;
-      // (emrysal) if we do an early return on !teamMetadata?.subscriptionId here, the bundler is not smart enough to infer
-      // that it shouldn't clear out the BILLING_PLANS before the for() scope finishes.
-      if (team.isOrganization && teamMetadata?.subscriptionId) {
-        return ENTERPRISE_SLUGS.includes(team.slug ?? "")
-          ? BILLING_PLANS.ENTERPRISE
-          : BILLING_PLANS.ORGANIZATIONS;
-      }
-      if (teamMetadata?.subscriptionId) {
-        return BILLING_PLANS.TEAMS;
-      }
-      // no subscriptionId or parent subscription id in this loop, so this membership hasn't got a plan.
-      // continue;
-    }
-    return BILLING_PLANS.UNKNOWN;
+    ...
+    */
   }
 }

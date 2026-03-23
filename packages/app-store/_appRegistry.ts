@@ -13,6 +13,9 @@ export type TDependencyData = {
   installed?: boolean;
 }[];
 
+// Artio Carbon: Only allow Google Calendar and Google Meet apps
+const ALLOWED_APPS = ["google-calendar", "google-meet"];
+
 /**
  * Get App metadata either using dirName or slug
  */
@@ -45,6 +48,8 @@ export async function getAppRegistry() {
   const apps = [] as App[];
   const installCountPerApp = await getInstallCountPerApp();
   for await (const dbapp of dbApps) {
+    // Artio Carbon: Filter to only allowed apps
+    if (!ALLOWED_APPS.includes(dbapp.slug)) continue;
     const app = await getAppWithMetadata(dbapp);
     if (!app) continue;
     // Skip if app isn't installed
@@ -103,6 +108,8 @@ export async function getAppRegistryWithCredentials(userId: number, userAdminTea
   })[];
   const installCountPerApp = await getInstallCountPerApp();
   for await (const dbapp of dbApps) {
+    // Artio Carbon: Filter to only allowed apps
+    if (!ALLOWED_APPS.includes(dbapp.slug)) continue;
     const delegationCredentialsForApp = delegationCredentials.filter(
       (credential) => credential.appId === dbapp.slug
     );

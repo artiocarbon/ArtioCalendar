@@ -150,33 +150,27 @@ const platformNavigationItems: NavigationItemType[] = [
   },
   {
     name: "Documentation",
-    href: "https://docs.cal.com/docs/platform",
+    href: "https://artiocarbon.com",
     icon: "chart-bar",
     target: "_blank",
   },
   {
     name: "API reference",
-    href: "https://api.cal.com/v2/docs#/",
+    href: "https://artiocarbon.com",
     icon: "terminal",
     target: "_blank",
   },
   {
     name: "Atoms",
-    href: "https://docs.cal.com/docs/platform#atoms",
+    href: "https://artiocarbon.com",
     icon: "atom",
     target: "_blank",
   },
   {
     name: MORE_SEPARATOR_NAME,
-    href: "https://docs.cal.com/docs/platform/faq",
+    href: "https://artiocarbon.com",
     icon: "ellipsis",
     target: "_blank",
-  },
-  {
-    name: "Billing",
-    href: "/settings/platform/billing",
-    icon: "credit-card",
-    moreOnMobile: true,
   },
   {
     name: "Members",

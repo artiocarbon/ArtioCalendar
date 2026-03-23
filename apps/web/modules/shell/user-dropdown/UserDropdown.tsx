@@ -66,15 +66,15 @@ interface UserDropdownProps {
 }
 
 const DOWNLOAD_LINKS = {
-  ios: "https://go.cal.com/iOS",
-  android: "https://go.cal.com/android",
-  chrome: "https://go.cal.com/chrome",
-  safari: "https://go.cal.com/safari",
-  firefox: "https://go.cal.com/firefox",
-  edge: "https://go.cal.com/edge",
-  macos: "https://cal.com/download",
-  windows: "https://cal.com/download",
-  linux: "https://cal.com/download",
+  ios: "https://artiocarbon.com",
+  android: "https://artiocarbon.com",
+  chrome: "https://artiocarbon.com",
+  safari: "https://artiocarbon.com",
+  firefox: "https://artiocarbon.com",
+  edge: "https://artiocarbon.com",
+  macos: "https://artiocarbon.com",
+  windows: "https://artiocarbon.com",
+  linux: "https://artiocarbon.com",
 } as const;
 
 export function UserDropdown({ small }: UserDropdownProps) {

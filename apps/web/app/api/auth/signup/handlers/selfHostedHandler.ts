@@ -29,6 +29,14 @@ export default async function handler(body: Record<string, string>) {
   const username = slugify(body.username);
   const userEmail = email.toLowerCase();
 
+  // Artio Carbon: Only allow artiocarbon.com email domain
+  if (!userEmail.endsWith("@artiocarbon.com")) {
+    return NextResponse.json(
+      { message: "Only artiocarbon.com email addresses are allowed to register" },
+      { status: 403 }
+    );
+  }
+
   if (!username) {
     return NextResponse.json({ message: "Invalid username" }, { status: 422 });
   }

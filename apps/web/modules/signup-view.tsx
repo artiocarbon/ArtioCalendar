@@ -419,69 +419,13 @@ export default function Signup({
                 )}
                 <div className="flex flex-col gap-2">
                   <h1 className="font-cal text-[28px] leading-none ">
-                    {IS_CALCOM ? t("create_your_calcom_account") : t("create_your_account")}
+                    {t("create_your_account")}
                   </h1>
-                  {IS_CALCOM ? (
-                    <p className="text-subtle text-base font-medium leading-5">
-                      {t("cal_signup_description")}
-                    </p>
-                  ) : (
-                    <p className="text-subtle text-base font-medium leading-5">
-                      {t("calcom_explained", {
-                        appName: APP_NAME,
-                      })}
-                    </p>
-                  )}
-                  {IS_CALCOM && (
-                    <div className="mt-12">
-                      <SelectField
-                        label={t("data_region")}
-                        value={{
-                          label: t(
-                            // Use WEBAPP_URL for SSR-safe region detection
-                            WEBAPP_URL.includes("cal.eu") ||
-                              (typeof window !== "undefined" &&
-                                window.location.hostname === "localhost" &&
-                                new URL(window.location.href).searchParams.get("region") === "eu")
-                              ? "european_union"
-                              : "united_states"
-                          ),
-                          value:
-                            // Use WEBAPP_URL for SSR-safe region detection
-                            WEBAPP_URL.includes("cal.eu") ||
-                            (typeof window !== "undefined" &&
-                              window.location.hostname === "localhost" &&
-                              new URL(window.location.href).searchParams.get("region") === "eu")
-                              ? "eu"
-                              : "us",
-                        }}
-                        options={[
-                          { label: t("united_states"), value: "us" },
-                          { label: t("european_union"), value: "eu" },
-                        ]}
-                        onChange={(option) => {
-                          if (option && "value" in option) {
-                            const currentUrl = new URL(window.location.href);
-
-                            // Handle localhost - add region as URL parameter
-                            if (currentUrl.hostname === "localhost") {
-                              currentUrl.searchParams.set("region", option.value);
-                              window.location.href = currentUrl.toString();
-                              return;
-                            }
-
-                            // Handle production domains - modify hostname only to preserve query params
-                            if (option.value === "eu") {
-                              currentUrl.hostname = currentUrl.hostname.replace("cal.com", "cal.eu");
-                            } else {
-                              currentUrl.hostname = currentUrl.hostname.replace("cal.eu", "cal.com");
-                            }
-                            window.location.href = currentUrl.toString();
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
+                  <p className="text-subtle text-base font-medium leading-5">
+                    {t("calcom_explained", {
+                      appName: APP_NAME,
+                    })}
+                  </p>
                 </div>
 
                 {/* Form Container */}
@@ -843,69 +787,13 @@ export default function Signup({
             )}
           </div>
           <div className="border-subtle lg:bg-subtle mx-auto mt-24 w-full max-w-2xl flex-col justify-between rounded-l-2xl pl-4 dark:bg-none lg:mt-0 lg:flex lg:max-w-full lg:border lg:py-12 lg:pl-12">
-            {IS_CALCOM && (
-              <>
-                <div className="-mt-4 mb-6 mr-12 grid w-full grid-cols-3 gap-5 pr-4 sm:gap-3 lg:grid-cols-4">
-                  <div>
-                    {/* eslint-disable @next/next/no-img-element */}
-                    <img
-                      src="/product-cards/product-of-the-day.svg"
-                      className="h-[34px] w-full dark:invert"
-                      alt="Cal.com was Product of the Day at ProductHunt"
-                    />
-                  </div>
-                  <div>
-                    {/* eslint-disable @next/next/no-img-element */}
-                    <img
-                      src="/product-cards/product-of-the-week.svg"
-                      className="h-[34px] w-full dark:invert"
-                      alt="Cal.com was Product of the Week at ProductHunt"
-                    />
-                  </div>
-                  <div>
-                    {/* eslint-disable @next/next/no-img-element */}
-                    <img
-                      src="/product-cards/product-of-the-month.svg"
-                      className="h-[34px] w-full dark:invert"
-                      alt="Cal.com was Product of the Month at ProductHunt"
-                    />
-                  </div>
-                </div>
-                <div className="mb-6 mr-12 grid w-full grid-cols-3 gap-5 pr-4 sm:gap-3 lg:grid-cols-4">
-                  <div>
-                    {/* eslint-disable @next/next/no-img-element */}
-                    <img
-                      src="/product-cards/producthunt.svg"
-                      className="h-[54px] w-full"
-                      alt="ProductHunt Rating of 5 Stars"
-                    />
-                  </div>
-                  <div>
-                    {/* eslint-disable @next/next/no-img-element */}
-                    <img
-                      src="/product-cards/google-reviews.svg"
-                      className="h-[54px] w-full"
-                      alt="Google Reviews Rating of 4.7 Stars"
-                    />
-                  </div>
-                  <div>
-                    {/* eslint-disable @next/next/no-img-element */}
-                    <img
-                      src="/product-cards/g2.svg"
-                      className="h-[54px] w-full"
-                      alt="G2 Rating of 4.7 Stars"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
             <div className="border-default bg-black/3 hidden rounded-bl-2xl rounded-br-none rounded-tl-2xl border border-r-0 border-dashed dark:bg-white/5 lg:block lg:py-[6px] lg:pl-[6px]">
-              <img className="block dark:hidden" src="/mock-event-type-list.svg" alt="Cal.com Booking Page" />
+              <img className="block dark:hidden" src="/mock-event-type-list.svg" alt={`${APP_NAME} Booking Page`} />
               {/* eslint-disable @next/next/no-img-element */}
               <img
                 className="hidden dark:block"
                 src="/mock-event-type-list-dark.svg"
-                alt="Cal.com Booking Page"
+                alt={`${APP_NAME} Booking Page`}
               />
             </div>
             <div className="mr-12 mt-8 hidden h-full w-full grid-cols-3 gap-4 overflow-hidden lg:grid">

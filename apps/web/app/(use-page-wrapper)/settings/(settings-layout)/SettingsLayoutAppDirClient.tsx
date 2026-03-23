@@ -119,18 +119,6 @@ const getTabs = (orgBranding: OrganizationBranding | null) => {
       ],
     },
     {
-      name: "billing",
-      href: "/settings/billing",
-      icon: "credit-card",
-      children: [
-        {
-          name: "manage_billing",
-          href: "/settings/billing",
-          trackingMetadata: { section: "billing", page: "manage_billing" },
-        },
-      ],
-    },
-    {
       name: "developer",
       href: "/settings/developer",
       icon: "terminal",

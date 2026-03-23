@@ -175,6 +175,12 @@
   --animate-drawer-slide-left-and-fade: drawerSlideLeftAndFade 150ms cubic-bezier(0.16, 1, 0.3, 1);
   --animate-drawer-slide-right-and-fade: drawerSlideRightAndFade 150ms ease-in;
 
+  /* Artio Carbon Utilities */
+  --glass-card: bg-artio-green-800/60 backdrop-blur-md border border-artio-green-500/20 rounded-xl shadow-lg;
+  --glass-panel: bg-artio-green-700/30 backdrop-blur-md border border-artio-green-600/10 rounded-xl;
+  --gold-glow: shadow-[0_0_20px_rgba(228,160,64,0.6)];
+  --green-glow: shadow-[0_0_15px_rgba(45,65,52,0.8)];
+
   @keyframes fade-in-up {
     from {
       opacity: 0;
@@ -221,7 +227,50 @@
 :root,
 :host {
   /* 4px */
-  --radius: 0.25rem;
+  --radius: 0.5rem;
+
+  /* Artio Carbon Color Palette */
+  --artio-gold: hsla(39, 74%, 57%, 1);
+  --artio-green-50: hsla(140, 10%, 95%, 1);
+  --artio-green-500: hsla(140, 10%, 20%, 1);
+  --artio-green-600: hsla(140, 10%, 15%, 1);
+  --artio-green-700: hsla(140, 30%, 25%, 1);
+  --artio-green-800: hsla(140, 14%, 10%, 1);
+  --artio-green-950: hsla(140, 14%, 5%, 1);
+
+  /* shadcn/ui Overrides */
+  --background: 140 14% 10%;
+  --foreground: 140 10% 95%;
+  --primary: 39 74% 57%;
+  --primary-foreground: 140 14% 10%;
+  --secondary: 140 30% 25%;
+  --secondary-foreground: 140 10% 95%;
+  --border: 140 10% 20%;
+  --ring: 39 74% 57%;
+
+  /* Cal.com Background Mapping */
+  --cal-bg: var(--artio-green-800);
+  --cal-bg-emphasis: var(--artio-green-700);
+  --cal-bg-subtle: var(--artio-green-950);
+  --cal-bg-muted: hsla(140, 30%, 20%, 0.3);
+  --cal-bg-inverted: var(--artio-green-50);
+
+  /* Cal.com Brand Mapping */
+  --cal-brand: var(--artio-gold);
+  --cal-brand-emphasis: hsla(39, 74%, 47%, 1);
+  --cal-brand-text: var(--artio-green-800);
+
+  /* Cal.com Text Mapping */
+  --cal-text: var(--artio-green-50);
+  --cal-text-emphasis: white;
+  --cal-text-subtle: hsla(140, 10%, 80%, 1);
+  --cal-text-muted: hsla(140, 10%, 60%, 1);
+  --cal-text-inverted: var(--artio-green-800);
+
+  /* Cal.com Border Mapping */
+  --cal-border: var(--artio-green-500);
+  --cal-border-subtle: hsla(140, 10%, 20%, 0.2);
+  --cal-border-emphasis: var(--artio-green-600);
 
   /* 2px */
   --radius-sm: 0.125rem;

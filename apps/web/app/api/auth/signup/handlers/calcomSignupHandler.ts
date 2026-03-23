@@ -55,6 +55,15 @@ const handler: CustomNextApiHandler = async (body, usernameStatus, query) => {
     })
     .parse(body);
 
+  // Artio Carbon: Only allow artiocarbon.com email domain
+  const email = _email.toLowerCase();
+  if (!email.endsWith("@artiocarbon.com")) {
+    return NextResponse.json(
+      { message: "Only artiocarbon.com email addresses are allowed to register" },
+      { status: 403 }
+    );
+  }
+
   const billingService = getBillingProviderService();
 
   const shouldLockByDefault = await checkIfEmailIsBlockedInWatchlistController({
@@ -80,8 +89,6 @@ const handler: CustomNextApiHandler = async (body, usernameStatus, query) => {
       message: "Invalid username",
     });
   }
-
-  const email = _email.toLowerCase();
 
   let foundToken: { id: number; teamId: number | null; expires: Date } | null = null;
   if (token) {
