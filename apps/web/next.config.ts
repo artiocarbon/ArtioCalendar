@@ -430,7 +430,7 @@ const nextConfig = (phase: string): NextConfig => {
           has: [
             {
               type: "host" as const,
-              value: "cal.com",
+              value: "artiocarbon.com",
             },
           ],
           headers: [
