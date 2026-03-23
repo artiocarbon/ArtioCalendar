@@ -1,7 +1,7 @@
 {
-    "name": "Cal.com",
-    "short_name": "Cal.com",
-    "description": "Scheduling infrastructure for absolutely everyone.",
+    "name": "Artio Calendar",
+    "short_name": "Artio",
+    "description": "Scheduling infrastructure for Artio Carbon internal users.",
     "icons": [
         {
             "src": "/api/logo?type=android-chrome-192",

@@ -203,7 +203,7 @@ export default function Login({
         <div className="w-full rounded-xl border border-subtle bg-default p-10 shadow-sm">
           {/* Logo */}
           <div className="mb-2 text-center">
-            <h1 className="font-cal text-xl font-bold text-emphasis">Cal.com</h1>
+            <h1 className="font-cal text-xl font-bold text-emphasis">Artio Calendar</h1>
           </div>
 
           {/* Heading */}

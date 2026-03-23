@@ -13,8 +13,8 @@ self.addEventListener("push", async (event) => {
     return;
   }
 
-  const title = notificationData.title || "New Cal.com Notification";
-  const image = notificationData.icon || "https://cal.com/api/logo?type=icon";
+  const title = notificationData.title || "New Artio Calendar Notification";
+  const image = notificationData.icon || "https://artiocarbon.com/artio-logo-gold.png";
 
    event.waitUntil(
     (async () => {

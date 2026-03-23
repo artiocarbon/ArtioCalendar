@@ -644,7 +644,7 @@ export const EventAdvancedTab = ({
             <LearnMoreLink
               t={t}
               i18nKey="booking_questions_description"
-              href="https://cal.com/help/event-types/booking-questions"
+              href="https://artiocarbon.com"
             />
           </p>
         </div>
@@ -737,7 +737,7 @@ export const EventAdvancedTab = ({
                   <LearnMoreLink
                     t={t}
                     i18nKey="description_disable_cancelling"
-                    href="https://cal.com/help/event-types/disable-canceling-rescheduling#disable-cancelling"
+                    href="https://artiocarbon.com"
                   />
                 }
                 checked={value}
@@ -881,7 +881,7 @@ export const EventAdvancedTab = ({
               <LearnMoreLink
                 t={t}
                 i18nKey="disable_notes_description"
-                href="https://cal.com/help/event-types/hide-notes"
+                href="https://artiocarbon.com"
               />
             }
             checked={value}
@@ -1049,7 +1049,7 @@ export const EventAdvancedTab = ({
                   <LearnMoreLink
                     t={t}
                     i18nKey="multiple_private_links_description"
-                    href="https://cal.com/help/event-types/private-links"
+                    href="https://artiocarbon.com"
                   />
                 }
                 tooltip={isManagedEventType ? t("managed_event_field_parent_control_disabled") : ""}
@@ -1102,7 +1102,7 @@ export const EventAdvancedTab = ({
                 <LearnMoreLink
                   t={t}
                   i18nKey="offer_seats_description"
-                  href="https://cal.com/help/event-types/offer-seats"
+                  href="https://artiocarbon.com"
                 />
               }
               checked={value}
@@ -1234,7 +1234,7 @@ export const EventAdvancedTab = ({
               <LearnMoreLink
                 t={t}
                 i18nKey="hide_organizer_email_description"
-                href="https://cal.com/help/event-types/hideorganizersemail#hide-organizers-email"
+                href="https://artiocarbon.com"
               />
             }
             descriptionClassName={customClassNames?.hideOrganizerEmail?.description}
@@ -1270,7 +1270,7 @@ export const EventAdvancedTab = ({
                 <LearnMoreLink
                   t={t}
                   i18nKey="description_lock_timezone_toggle_on_booking_page"
-                  href="https://cal.com/help/event-types/timezone-lock"
+                  href="https://artiocarbon.com"
                 />
               }
               checked={value}
@@ -1323,7 +1323,7 @@ export const EventAdvancedTab = ({
               <LearnMoreLink
                 t={t}
                 i18nKey="allow_rescheduling_past_events_description"
-                href="https://cal.com/help/event-types/allow-rescheduling"
+                href="https://artiocarbon.com"
               />
             }
             checked={value}
@@ -1497,7 +1497,7 @@ export const EventAdvancedTab = ({
                 <LearnMoreLink
                   t={t}
                   i18nKey="show_optimized_slots_description"
-                  href="https://cal.com/help/event-types/optimized-slots#optimized-slots"
+                  href="https://artiocarbon.com"
                 />
               }
               checked={isChecked}
