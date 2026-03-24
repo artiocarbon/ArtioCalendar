@@ -12,5 +12,28 @@
   "tailwindCSS.classFunctions": ["cva"],
   "[typescript]": {
     "editor.defaultFormatter": "biomejs.biome"
-  }
+  },
+  "dbcode.connections": [
+    {
+      "connectionId": "RDCLUZA089scQq_xvhX-O",
+      "name": "Calendar DB",
+      "driver": "postgres",
+      "connectionType": "host",
+      "host": "centerbeam.proxy.rlwy.net",
+      "port": 45378,
+      "ssl": false,
+      "authMethod": "password",
+      "username": "postgres",
+      "password": "",
+      "savePassword": "secretStorage",
+      "database": "railway",
+      "readOnly": false,
+      "postConnectionSqlType": "inline",
+      "connectionTimeout": 30,
+      "pinnedConnectionTimeout": "0",
+      "introspection": {
+        "progressive": false
+      }
+    }
+  ]
 }

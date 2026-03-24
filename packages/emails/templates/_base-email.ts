@@ -1,14 +1,14 @@
-import { decodeHTML } from "entities";
-import { z } from "zod";
-
+import process from "node:process";
 import dayjs from "@calcom/dayjs";
 import { FeaturesRepository } from "@calcom/features/flags/features.repository";
 import isSmsCalEmail from "@calcom/lib/isSmsCalEmail";
-import { serverConfig } from "@calcom/lib/serverConfig";
 import { getServerErrorFromUnknown } from "@calcom/lib/server/getServerErrorFromUnknown";
+import { sendEmailViaResendHttpApi } from "@calcom/lib/server/resendHttpEmail";
+import { getResendApiKey, serverConfig } from "@calcom/lib/serverConfig";
 import { setTestEmail } from "@calcom/lib/testEmails";
 import { prisma } from "@calcom/prisma";
-
+import { decodeHTML } from "entities";
+import { z } from "zod";
 import { sanitizeDisplayName } from "../lib/sanitizeDisplayName";
 
 export default class BaseEmail {
@@ -71,29 +71,67 @@ export default class BaseEmail {
       },
       ...(parseSubject.success && { subject: decodeHTML(parseSubject.data) }),
     };
+
+    const attachmentList = (payloadWithUnEscapedSubject as { attachments?: unknown[] }).attachments;
+    const hasAttachments = Array.isArray(attachmentList) && attachmentList.length > 0;
+
+    const resendApiKey = getResendApiKey();
+    if (resendApiKey && !hasAttachments) {
+      const replyTo = (payloadWithUnEscapedSubject as { replyTo?: string }).replyTo;
+      let subject = "";
+      if ("subject" in payloadWithUnEscapedSubject && payloadWithUnEscapedSubject.subject) {
+        subject = String(payloadWithUnEscapedSubject.subject);
+      }
+      let html: string | undefined;
+      if (typeof payload.html === "string") {
+        html = payload.html;
+      }
+      let text: string | undefined;
+      if (typeof payload.text === "string") {
+        text = payload.text;
+      }
+      let replyToStr: string | undefined;
+      if (typeof replyTo === "string") {
+        replyToStr = replyTo;
+      }
+      await sendEmailViaResendHttpApi(
+        {
+          from: String(payloadWithUnEscapedSubject.from),
+          to: String(payloadWithUnEscapedSubject.to),
+          subject,
+          html,
+          text,
+          replyTo: replyToStr,
+          headers: payloadWithUnEscapedSubject.headers as Record<string, string> | undefined,
+        },
+        { apiKey: resendApiKey }
+      );
+      return;
+    }
+
     const { createTransport } = await import("nodemailer");
-    await new Promise((resolve, reject) =>
-      createTransport(this.getMailerOptions().transport).sendMail(
-        payloadWithUnEscapedSubject,
-        (_err, info) => {
-          if (_err) {
-            const err = getServerErrorFromUnknown(_err);
-            this.printNodeMailerError(err);
-            reject(err);
+    const transport = createTransport(this.getMailerOptions().transport);
+    try {
+      await new Promise<void>((resolve, reject) => {
+        transport.sendMail(payloadWithUnEscapedSubject, (err) => {
+          if (err) {
+            const mailErr = getServerErrorFromUnknown(err);
+            this.printNodeMailerError(mailErr);
+            reject(mailErr);
           } else {
-            resolve(info);
+            resolve();
           }
-        }
-      )
-    ).catch((e) =>
+        });
+      });
+    } catch (e) {
       console.error(
         "sendEmail",
         `from: ${"from" in payloadWithUnEscapedSubject ? payloadWithUnEscapedSubject.from : ""}`,
         `subject: ${"subject" in payloadWithUnEscapedSubject ? payloadWithUnEscapedSubject.subject : ""}`,
         e
-      )
-    );
-    return new Promise((resolve) => resolve("send mail async"));
+      );
+      throw e;
+    }
   }
   protected getMailerOptions() {
     return {

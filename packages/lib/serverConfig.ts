@@ -15,6 +15,12 @@ function detectTransport(): SendmailTransport.Options | SMTPConnection.Options |
         user: "resend",
         pass: process.env.RESEND_API_KEY,
       },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 20000,
+      tls: {
+        rejectUnauthorized: !isENVDev,
+      },
     };
 
     return transport;
@@ -67,3 +73,17 @@ export const serverConfig = {
   from: process.env.EMAIL_FROM,
   headers: getAdditionalEmailHeaders()[process.env.EMAIL_SERVER_HOST || ""] || undefined,
 };
+
+/**
+ * Resend API key for HTTPS sending, aligned with the Resend SMTP transport when that preset is used.
+ * Prefer reading auth from {@link serverConfig.transport} so we match Nodemailer credentials even when
+ * env visibility differs between bundles.
+ */
+export function getResendApiKey(): string | undefined {
+  const t = serverConfig.transport;
+  if (typeof t === "object" && t !== null && "host" in t && (t as { host: string }).host === "smtp.resend.com") {
+    const pass = (t as { auth?: { pass?: string } }).auth?.pass?.trim();
+    if (pass) return pass;
+  }
+  return process.env.RESEND_API_KEY?.trim();
+}
