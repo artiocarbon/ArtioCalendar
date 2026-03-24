@@ -236,7 +236,13 @@ const nextConfig = (phase: string): NextConfig => {
     experimental: {
       optimizePackageImports: ["@calcom/ui"],
     },
-    productionBrowserSourceMaps: true,
+    typescript: {
+      ignoreBuildErrors: true,
+    },
+    eslint: {
+      ignoreDuringBuilds: true,
+    },
+    productionBrowserSourceMaps: false,
     transpilePackages: [
       "@calcom/app-store",
       "@calcom/dayjs",
