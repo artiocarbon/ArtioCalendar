@@ -77,7 +77,7 @@
     "test": "TZ=UTC vitest run",
     "test:ui": "TZ=UTC vitest --ui",
     "type-check": "turbo run type-check",
-    "type-check:ci": "turbo run type-check:ci --log-prefix=none",
+    "type-check:ci": "NODE_OPTIONS='--max-old-space-size=8192' turbo run type-check:ci --log-prefix=none",
     "web": "yarn workspace @calcom/web",
     "changesets-add": "yarn changeset add",
     "changesets-version": "yarn changeset version",
