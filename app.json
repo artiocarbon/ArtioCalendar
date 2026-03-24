@@ -64,6 +64,11 @@
       "description": "Configures the global From: header whilst sending emails",
       "value": ""
     },
+    "RESEND_API_KEY": {
+      "description": "Resend API key. When set, uses Resend for email (takes precedence over EMAIL_SERVER_*). Verify sending domain in Resend.",
+      "value": "",
+      "required": false
+    },
     "EMAIL_SERVER_HOST": {
       "description": "Configures the global SMTP server host",
       "value": "smtp.gmail.com"
