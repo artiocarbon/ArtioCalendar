@@ -276,6 +276,10 @@ const nextConfig = (phase: string): NextConfig => {
           destination: "/:path*",
         },
         {
+          source: "/favicon.ico",
+          destination: "/artio-logo-gold.png",
+        },
+        {
           source: "/forms/:formQuery*",
           destination: "/apps/routing-forms/routing-link/:formQuery*",
         },
