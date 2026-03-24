@@ -109,6 +109,8 @@ export const getHandler = async ({ ctx, input }: MeOptions) => {
     email: user.email,
     emailMd5: crypto.createHash("md5").update(user.email).digest("hex"),
     emailVerified: user.emailVerified,
+    senderEmail: user.senderEmail,
+    senderEmailVerified: user.senderEmailVerified,
     bufferTime: user.bufferTime,
     locale: user.locale,
     timeFormat: user.timeFormat,

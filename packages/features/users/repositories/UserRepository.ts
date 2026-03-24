@@ -1169,6 +1169,8 @@ export class UserRepository {
         name: true,
         email: true,
         emailVerified: true,
+        senderEmail: true,
+        senderEmailVerified: true,
         bio: true,
         avatarUrl: true,
         timeZone: true,
