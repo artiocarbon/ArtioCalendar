@@ -7,6 +7,7 @@ import { ZChangePasswordInputSchema } from "./changePassword.schema";
 import { ZResendVerifyEmailSchema } from "./resendVerifyEmail.schema";
 import { ZSendVerifyEmailCodeSchema } from "./sendVerifyEmailCode.schema";
 import { ZVerifyPasswordInputSchema } from "./verifyPassword.schema";
+import { ZSendSenderEmailVerificationSchema } from "./sendSenderEmailVerification.schema";
 
 type AuthRouterHandlerCache = {
   changePassword?: typeof import("./changePassword.handler").changePasswordHandler;
@@ -16,6 +17,7 @@ type AuthRouterHandlerCache = {
   sendVerifyEmailCode?: typeof import("./sendVerifyEmailCode.handler").sendVerifyEmailCodeHandler;
   resendVerifySecondaryEmail?: typeof import("./resendVerifyEmail.handler").resendVerifyEmail;
   createAccountPassword?: typeof import("./createAccountPassword.handler").createAccountPasswordHandler;
+  sendSenderEmailVerification?: typeof import("./sendSenderEmailVerification.handler").sendSenderEmailVerificationHandler;
 };
 
 export const authRouter = router({
@@ -70,4 +72,14 @@ export const authRouter = router({
       ctx,
     });
   }),
+
+  sendSenderEmailVerification: authedProcedure
+    .input(ZSendSenderEmailVerificationSchema)
+    .mutation(async ({ ctx }) => {
+      const { sendSenderEmailVerificationHandler } = await import("./sendSenderEmailVerification.handler");
+
+      return sendSenderEmailVerificationHandler({
+        ctx,
+      });
+    }),
 });

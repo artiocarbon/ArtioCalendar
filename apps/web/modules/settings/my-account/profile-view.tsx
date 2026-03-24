@@ -61,6 +61,7 @@ export type FormValues = {
   email: string;
   bio: string;
   secondaryEmails: Email[];
+  senderEmail: string;
 };
 type Props = {
   user: RouterOutputs["viewer"]["me"]["get"];
@@ -124,6 +125,14 @@ const ProfileView = ({ user }: Props) => {
   });
 
   const resendVerifyEmailMutation = trpc.viewer.auth.resendVerifyEmail.useMutation();
+  const sendSenderEmailVerificationMutation = trpc.viewer.auth.sendSenderEmailVerification.useMutation({
+    onSuccess: () => {
+      showToast(t("verification_email_sent"), "success");
+    },
+    onError: (error) => {
+      showToast(error.message, "error");
+    },
+  });
 
   const [confirmPasswordOpen, setConfirmPasswordOpen] = useState(false);
   const [tempFormValues, setTempFormValues] = useState<ExtendedFormValues | null>(null);
@@ -233,6 +242,7 @@ const ProfileView = ({ user }: Props) => {
     name: user.name || "",
     email: userEmail,
     bio: user.bio || "",
+    senderEmail: user.senderEmail || "",
     // We add the primary email as the first item in the list
     secondaryEmails: [
       {
@@ -517,6 +527,7 @@ const ProfileForm = ({
   const profileFormSchema = z.object({
     username: z.string(),
     avatarUrl: z.string().nullable(),
+    senderEmail: z.string().optional(),
     name: z
       .string()
       .trim()
@@ -711,6 +722,27 @@ const ProfileForm = ({
             firstRender={firstRender}
             setFirstRender={setFirstRender}
             height="120px"
+          />
+        </div>
+        <div className="mt-6">
+          <TextField
+            label="Sender Email Alias"
+            type="email"
+            placeholder={t("defaults_to_your_login_email")}
+            {...formMethods.register("senderEmail")}
+            addOnSuffix={
+              user.senderEmailVerified ? (
+                <Badge variant="green">{t("verified")}</Badge>
+              ) : (
+                <Button
+                  color="secondary"
+                  size="sm"
+                  onClick={() => sendSenderEmailVerificationMutation.mutate()}
+                  loading={sendSenderEmailVerificationMutation.isPending}>
+                  {t("verify")}
+                </Button>
+              )
+            }
           />
         </div>
         {usersAttributes && usersAttributes?.length > 0 && (

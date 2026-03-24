@@ -412,6 +412,8 @@ model User {
   /// @zod.import(["import { emailSchema } from '../../zod-utils'"]).custom.use(emailSchema)
   email               String
   emailVerified       DateTime?
+  senderEmail         String?
+  senderEmailVerified Boolean              @default(false)
   password            UserPassword?
   bio                 String?
   avatarUrl           String?

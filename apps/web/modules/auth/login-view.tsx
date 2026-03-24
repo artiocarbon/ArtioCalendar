@@ -62,7 +62,7 @@ function BackgroundGrid() {
         height={height}
         viewBox={`0 0 ${width} ${height}`}
         fill="none"
-        className="[--grid-fill:#f7f7f7] [--grid-stroke:rgba(34,42,53,0.08)] dark:[--grid-fill:#1f1f1f] dark:[--grid-stroke:rgba(255,255,255,0.08)]">
+        className="[--grid-fill:theme(colors.gray.100)] [--grid-stroke:theme(colors.gray.200)] dark:[--grid-fill:theme(colors.cal.bg-subtle)] dark:[--grid-stroke:theme(colors.cal.bg-emphasis)]">
         <defs>
           <radialGradient id="gridFade" cx="50%" cy="50%" rx="70%" ry="70%">
             <stop offset="20%" stopColor="white" stopOpacity="1" />
@@ -203,7 +203,7 @@ export default function Login({
         <div className="w-full rounded-xl border border-subtle bg-default p-10 shadow-sm">
           {/* Logo */}
           <div className="mb-2 text-center">
-            <h1 className="font-cal text-xl font-bold text-emphasis">Artio Calendar</h1>
+            <img className="mx-auto h-10 w-auto" src="/artio-logo-gold.png" alt="Artio Calendar" />
           </div>
 
           {/* Heading */}

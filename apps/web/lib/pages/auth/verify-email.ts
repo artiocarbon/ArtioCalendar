@@ -15,6 +15,7 @@ const verifySchema = z.object({
   token: z.string(),
   makePrimary: z.string().optional(),
   redirectTo: z.string().optional(),
+  purpose: z.string().optional(),
 });
 
 const USER_ALREADY_EXISTING_MESSAGE = "A User already exists with this email";
@@ -44,7 +45,7 @@ export async function moveUserToMatchingOrg({ email }: { email: string }) {
 }
 
 export async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { token, makePrimary, redirectTo } = verifySchema.parse(req.query);
+  const { token, makePrimary, redirectTo, purpose } = verifySchema.parse(req.query);
 
   const foundToken = await prisma.verificationToken.findFirst({
     where: {
@@ -58,6 +59,26 @@ export async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   if (dayjs(foundToken?.expires).isBefore(dayjs())) {
     return res.status(401).json({ message: "Token expired" });
+  }
+
+  if (purpose === "senderEmail") {
+    const user = await prisma.user.findFirst({
+      where: {
+        senderEmail: foundToken.identifier,
+      },
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: "Cannot find a user with this sender email" });
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { senderEmailVerified: true },
+    });
+
+    await cleanUpVerificationTokens(foundToken.id);
+    return res.redirect(`${WEBAPP_URL}/settings/my-account/profile`);
   }
 
   // The user is verifying the secondary email

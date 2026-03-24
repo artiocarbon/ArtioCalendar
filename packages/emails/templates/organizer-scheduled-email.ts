@@ -5,6 +5,7 @@ import { getRichDescription } from "@calcom/lib/CalEventParser";
 import { EMAIL_FROM_NAME } from "@calcom/lib/constants";
 import { getReplyToHeader } from "@calcom/lib/getReplyToHeader";
 import { TimeFormat } from "@calcom/lib/timeFormat";
+import { prisma } from "@calcom/prisma";
 import type { CalendarEvent, Person } from "@calcom/types/Calendar";
 
 import generateIcsFile from "../lib/generateIcsFile";
@@ -41,6 +42,17 @@ export default class OrganizerScheduledEmail extends BaseEmail {
   protected async getNodeMailerPayload(): Promise<Record<string, unknown>> {
     const clonedCalEvent = cloneDeep(this.calEvent);
     const toAddresses = [this.teamMember?.email || this.calEvent.organizer.email];
+    const organizer = await prisma.user.findUnique({
+      where: {
+        id: this.calEvent.organizer.id,
+      },
+      select: {
+        senderEmail: true,
+        senderEmailVerified: true,
+      },
+    });
+
+    const fromEmail = organizer?.senderEmail && organizer?.senderEmailVerified ? organizer.senderEmail : this.getMailerOptions().from;
 
     return {
       icalEvent: generateIcsFile({
@@ -48,7 +60,7 @@ export default class OrganizerScheduledEmail extends BaseEmail {
         role: GenerateIcsRole.ORGANIZER,
         status: "CONFIRMED",
       }),
-      from: `${EMAIL_FROM_NAME} <${this.getMailerOptions().from}>`,
+      from: `${EMAIL_FROM_NAME} <${fromEmail}>`,
       to: toAddresses.join(","),
       ...getReplyToHeader(
         this.calEvent,
