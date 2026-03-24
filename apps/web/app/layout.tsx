@@ -37,11 +37,11 @@ export const viewport = {
   themeColor: [
     {
       media: "(prefers-color-scheme: light)",
-      color: "#f9fafb",
+      color: "#19241d",
     },
     {
       media: "(prefers-color-scheme: dark)",
-      color: "#1C1C1C",
+      color: "#0b120d",
     },
   ],
 };
@@ -70,7 +70,7 @@ export const metadata = {
   },
   manifest: "/site.webmanifest",
   other: {
-    "application-TileColor": "#ff0000",
+    "application-TileColor": "#e4a040",
   },
   twitter: {
     site: "@calcom",

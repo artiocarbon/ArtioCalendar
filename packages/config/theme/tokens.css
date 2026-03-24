@@ -518,3 +518,33 @@
   --fill-error: var(--cal-text-error);
   --fill-brand: var(--cal-brand-text);
 }
+
+:root,
+:host,
+.dark {
+  --cal-bg: var(--artio-green-800);
+  --cal-bg-emphasis: var(--artio-green-700);
+  --cal-bg-subtle: var(--artio-green-950);
+  --cal-bg-muted: hsla(140, 30%, 20%, 0.3);
+  --cal-bg-inverted: var(--artio-green-50);
+
+  --cal-bg-primary: var(--artio-gold);
+  --cal-bg-primary-emphasis: hsla(39, 74%, 47%, 1);
+  --cal-bg-primary-muted: hsla(39, 74%, 57%, 0.2);
+
+  --cal-brand: var(--artio-gold);
+  --cal-brand-emphasis: hsla(39, 74%, 47%, 1);
+  --cal-brand-text: var(--artio-green-800);
+
+  --cal-text: var(--artio-green-50);
+  --cal-text-emphasis: white;
+  --cal-text-subtle: hsla(140, 10%, 80%, 1);
+  --cal-text-muted: hsla(140, 10%, 60%, 1);
+  --cal-text-inverted: var(--artio-green-800);
+
+  --cal-border: var(--artio-green-500);
+  --cal-border-subtle: hsla(140, 10%, 20%, 0.2);
+  --cal-border-emphasis: var(--artio-green-600);
+
+  --fill-brand: var(--cal-brand-text);
+}

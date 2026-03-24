@@ -1,9 +1,7 @@
 "use client";
 
-// eslint-disable-next-line no-restricted-imports
-import { debounce } from "lodash";
 import Link from "next/link";
-import type { CSSProperties, SyntheticEvent } from "react";
+import type { SyntheticEvent } from "react";
 import React from "react";
 
 import { useLocale } from "@calcom/lib/hooks/useLocale";
@@ -54,8 +52,6 @@ export default function ForgotPassword(props: PageProps) {
     }
   };
 
-  const debouncedHandleSubmitPasswordRequest = debounce(submitForgotPasswordRequest, 250);
-
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
 
@@ -71,7 +67,7 @@ export default function ForgotPassword(props: PageProps) {
     setError(null);
     setSuccess(false);
 
-    await debouncedHandleSubmitPasswordRequest({ email });
+    await submitForgotPasswordRequest({ email });
   };
 
   const Success = () => {
@@ -107,15 +103,7 @@ export default function ForgotPassword(props: PageProps) {
           <form
             className="stack-y-6"
             onSubmit={handleSubmit}
-            action="#"
-            style={
-              {
-                "--cal-brand": "#111827",
-                "--cal-brand-emphasis": "#101010",
-                "--cal-brand-text": "Black",
-                "--cal-brand-subtle": "#9CA3AF",
-              } as CSSProperties
-            }>
+            action="#">
             <input name="csrfToken" type="hidden" defaultValue={csrfToken} hidden />
             <EmailField
               onChange={handleChange}

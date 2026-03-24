@@ -25,7 +25,12 @@ function detectTransport(): SendmailTransport.Options | SMTPConnection.Options |
   }
 
   if (process.env.EMAIL_SERVER_HOST) {
-    const port = parseInt(process.env.EMAIL_SERVER_PORT || "");
+    const parsedPort = Number.parseInt(process.env.EMAIL_SERVER_PORT || "", 10);
+    const port = Number.isFinite(parsedPort) ? parsedPort : 587;
+    const secure =
+      process.env.EMAIL_SERVER_SECURE !== undefined
+        ? process.env.EMAIL_SERVER_SECURE === "true" || process.env.EMAIL_SERVER_SECURE === "1"
+        : port === 465;
     const auth =
       process.env.EMAIL_SERVER_USER && process.env.EMAIL_SERVER_PASSWORD
         ? {
@@ -38,7 +43,10 @@ function detectTransport(): SendmailTransport.Options | SMTPConnection.Options |
       host: process.env.EMAIL_SERVER_HOST,
       port,
       auth,
-      secure: port === 465,
+      secure,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 20000,
       tls: {
         rejectUnauthorized: !isENVDev,
       },
