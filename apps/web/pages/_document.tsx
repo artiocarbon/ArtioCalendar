@@ -65,9 +65,9 @@ class MyDocument extends Document<Props> {
             `,
             }}
           />
-          <link rel="apple-touch-icon" sizes="180x180" href="/api/logo?type=apple-touch-icon" />
-          <link rel="icon" type="image/png" sizes="32x32" href="/api/logo?type=favicon-32" />
-          <link rel="icon" type="image/png" sizes="16x16" href="/api/logo?type=favicon-16" />
+          <link rel="apple-touch-icon" sizes="180x180" href="/artio-logo.png" />
+          <link rel="icon" type="image/png" sizes="32x32" href="/artio-logo-gold.png" />
+          <link rel="icon" type="image/png" sizes="16x16" href="/artio-logo-gold.png" />
           <link rel="manifest" href="/site.webmanifest" />
           <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#e4a040" />
           <meta name="msapplication-TileColor" content="#e4a040" />

@@ -48,8 +48,8 @@ export const viewport = {
 
 export const metadata = {
   icons: {
-    icon: "/api/logo?type=favicon-32",
-    apple: "/api/logo?type=apple-touch-icon",
+    icon: "/artio-logo-gold.png",
+    apple: "/artio-logo.png",
     other: [
       {
         rel: "icon-mask",
@@ -57,12 +57,12 @@ export const metadata = {
         color: "#000000",
       },
       {
-        url: "/api/logo?type=favicon-16",
+        url: "/artio-logo-gold.png",
         sizes: "16x16",
         type: "image/png",
       },
       {
-        url: "/api/logo?type=favicon-32",
+        url: "/artio-logo-gold.png",
         sizes: "32x32",
         type: "image/png",
       },

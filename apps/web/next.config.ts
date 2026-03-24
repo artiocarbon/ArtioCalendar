@@ -239,9 +239,6 @@ const nextConfig = (phase: string): NextConfig => {
     typescript: {
       ignoreBuildErrors: true,
     },
-    eslint: {
-      ignoreDuringBuilds: true,
-    },
     productionBrowserSourceMaps: false,
     transpilePackages: [
       "@calcom/app-store",
@@ -274,10 +271,6 @@ const nextConfig = (phase: string): NextConfig => {
         {
           source: `/(${locales.join("|")})/:path*`,
           destination: "/:path*",
-        },
-        {
-          source: "/favicon.ico",
-          destination: "/artio-logo-gold.png",
         },
         {
           source: "/forms/:formQuery*",
