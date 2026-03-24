@@ -2,7 +2,6 @@ import dayjs from "@calcom/dayjs";
 import { clearSessionCache } from "@calcom/features/auth/lib/getServerSession";
 import { getBillingProviderService } from "@calcom/features/ee/billing/di/containers/Billing";
 import { getOrganizationRepository } from "@calcom/features/ee/organizations/di/OrganizationRepository.container";
-import { OnboardingPathService } from "@calcom/features/onboarding/lib/onboarding-path.service";
 import { IS_STRIPE_ENABLED, WEBAPP_URL } from "@calcom/lib/constants";
 import { prisma } from "@calcom/prisma";
 import { CreationSource, MembershipRole } from "@calcom/prisma/enums";
@@ -230,13 +229,9 @@ export async function handler(req: NextApiRequest, res: NextApiResponse) {
     },
   });
 
-  const hasCompletedOnboarding = user.completedOnboarding;
-
   await moveUserToMatchingOrg({ email: user.email });
 
-  const gettingStartedPath = await OnboardingPathService.getGettingStartedPath();
-
-  return res.redirect(`${WEBAPP_URL}${hasCompletedOnboarding ? "/event-types" : gettingStartedPath}`);
+  return res.redirect(`${WEBAPP_URL}/event-types`);
 }
 
 export async function cleanUpVerificationTokens(id: number) {

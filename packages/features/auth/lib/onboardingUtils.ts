@@ -1,6 +1,5 @@
 import dayjs from "@calcom/dayjs";
 import { FeaturesRepository } from "@calcom/features/flags/features.repository";
-import { MembershipRepository } from "@calcom/features/membership/repositories/MembershipRepository";
 import { ProfileRepository } from "@calcom/features/profile/repositories/ProfileRepository";
 import { UserRepository } from "@calcom/features/users/repositories/UserRepository";
 import { prisma } from "@calcom/prisma";
@@ -40,15 +39,6 @@ export async function checkOnboardingRedirect(
     organizationId = profile?.organizationId ?? null;
   }
 
-  // Check if user should be shown onboarding
-  const shouldShowOnboarding =
-    !user.completedOnboarding && !organizationId && dayjs(user.createdDate).isAfter(ONBOARDING_INTRODUCED_AT);
-
-  if (!shouldShowOnboarding) {
-    return null;
-  }
-
-  // Check email verification if needed
   const featuresRepository = new FeaturesRepository(prisma);
 
   if (options?.checkEmailVerification) {
@@ -56,21 +46,18 @@ export async function checkOnboardingRedirect(
       await featuresRepository.checkIfFeatureIsEnabledGlobally("email-verification");
 
     if (!user.emailVerified && user.identityProvider === "CAL" && emailVerificationEnabled) {
-      // User needs email verification, redirect to verification page
       return "/auth/verify-email";
     }
   }
 
-  // Determine which onboarding path to use
-  const onboardingV3Enabled = await featuresRepository.checkIfFeatureIsEnabledGlobally("onboarding-v3");
+  const shouldShowOnboarding =
+    !user.completedOnboarding && !organizationId && dayjs(user.createdDate).isAfter(ONBOARDING_INTRODUCED_AT);
 
-  // Check for any team membership (pending or accepted) to handle users who signed up via invite token
-  // When users sign up with an invite token, the membership is auto-accepted
-  const hasTeamMembership = await MembershipRepository.hasAnyTeamMembershipByUserId({ userId });
-
-  if (hasTeamMembership && onboardingV3Enabled) {
-    return "/onboarding/personal/settings";
+  if (!shouldShowOnboarding) {
+    return null;
   }
 
-  return onboardingV3Enabled ? "/onboarding/getting-started" : "/getting-started";
+  // Do not redirect into Cal.com onboarding wizards (/onboarding/*, /getting-started). Those routes are
+  // optional or absent on minimal self-hosted installs and return 404; users can use the app directly.
+  return null;
 }
