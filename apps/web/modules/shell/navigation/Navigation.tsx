@@ -88,26 +88,6 @@ const getNavigationItems = (orgBranding: OrganizationBranding): NavigationItemTy
     href: "/more",
     icon: "ellipsis",
   },
-  {
-    name: "insights",
-    href: "/insights",
-    icon: "chart-bar",
-    isCurrent: ({ pathname: path, item }) => path?.startsWith(item.href) ?? false,
-    moreOnMobile: true,
-    child: [
-      {
-        name: "bookings",
-        href: "/insights",
-        isCurrent: ({ pathname: path }) => path === "/insights",
-      },
-      {
-        name: "call_history",
-        href: "/insights/call-history",
-        // icon: "phone",
-        isCurrent: ({ pathname: path }) => path?.startsWith("/insights/call-history") ?? false,
-      },
-    ],
-  },
 ];
 
 const platformNavigationItems: NavigationItemType[] = [
