@@ -1,5 +1,4 @@
 import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
-import { checkOnboardingRedirect } from "@calcom/features/auth/lib/onboardingUtils";
 import { getTeamsFiltersFromQuery } from "@calcom/features/filters/lib/getTeamsFiltersFromQuery";
 import type { RouterOutputs } from "@calcom/trpc/react";
 import { eventTypesRouter } from "@calcom/trpc/server/routers/viewer/eventTypes/_router";
@@ -11,7 +10,6 @@ import { unstable_cache } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactElement } from "react";
-
 import { EventTypesWrapper } from "./EventTypesWrapper";
 
 const getCachedEventGroups: (
@@ -52,17 +50,6 @@ const Page = async ({ searchParams }: PageProps): Promise<ReactElement> => {
   });
   if (!session?.user?.id) {
     return redirect("/auth/login");
-  }
-
-  // Check if user needs onboarding and redirect before fetching event types data
-  // Use organizationId from session profile if available to avoid extra query
-  const organizationId = session.user.profile?.organizationId ?? null;
-  const onboardingPath = await checkOnboardingRedirect(session.user.id, {
-    checkEmailVerification: true,
-    organizationId,
-  });
-  if (onboardingPath) {
-    return redirect(onboardingPath);
   }
 
   const filters = getTeamsFiltersFromQuery(_searchParams);

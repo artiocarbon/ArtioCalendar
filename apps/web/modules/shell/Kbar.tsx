@@ -1,5 +1,3 @@
-import { useSession } from "next-auth/react";
-
 import { appStoreMetadata } from "@calcom/app-store/appStoreMetaData";
 import dayjs from "@calcom/dayjs";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
@@ -27,6 +25,7 @@ import {
   useRegisterActions,
 } from "kbar";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo } from "react";
 
@@ -58,14 +57,6 @@ const getApps: AppAction[] = Object.values(appStoreMetadata).map(({ name, slug }
 }));
 
 const KBAR_ACTION_CONFIGS: ActionConfig[] = [
-  {
-    id: "workflows",
-    name: "workflows",
-    section: "workflows",
-    shortcut: ["w", "f"],
-    keywords: "workflows automation",
-    href: "/workflows",
-  },
   {
     id: "event-types",
     name: "event_types_page_title",

@@ -134,6 +134,19 @@ export class BusyTimesService {
 
       const minutesToBlockBeforeEvent = (eventType?.beforeEventBuffer || 0) + (afterEventBuffer || 0);
       const minutesToBlockAfterEvent = (eventType?.afterEventBuffer || 0) + (beforeEventBuffer || 0);
+      const locations = (eventType as { locations?: unknown }).locations;
+      const isInPersonMeeting =
+        Array.isArray(locations) &&
+        locations.some(
+          (loc) =>
+            typeof loc === "object" &&
+            loc !== null &&
+            "type" in loc &&
+            (loc as { type?: unknown }).type === "inPerson"
+        );
+
+      const travelMinutesToBlockBeforeEvent = isInPersonMeeting ? 15 : minutesToBlockBeforeEvent;
+      const travelMinutesToBlockAfterEvent = isInPersonMeeting ? 15 : minutesToBlockAfterEvent;
 
       if (rest._count?.seatsReferences) {
         const bookedAt = `${dayjs(startTime).utc().format()}<>${dayjs(endTime).utc().format()}`;
@@ -147,20 +160,24 @@ export class BusyTimesService {
           eventTypeId === eventType?.id
         ) {
           // then we ONLY add the before/after buffer times as busy times.
-          if (minutesToBlockBeforeEvent) {
+          if (travelMinutesToBlockBeforeEvent) {
             aggregate.push({
-              start: dayjs(startTime).subtract(minutesToBlockBeforeEvent, "minute").toDate(),
+              start: dayjs(startTime).subtract(travelMinutesToBlockBeforeEvent, "minute").toDate(),
               end: dayjs(startTime).toDate(),
-              title: "busy_time.buffer_time",
-              source: "Buffer Time for seated event (before)",
+              title: isInPersonMeeting ? "ooo_reasons_travel" : "busy_time.buffer_time",
+              source: isInPersonMeeting
+                ? "Travel for seated event (before)"
+                : "Buffer Time for seated event (before)",
             });
           }
-          if (minutesToBlockAfterEvent) {
+          if (travelMinutesToBlockAfterEvent) {
             aggregate.push({
               start: dayjs(endTime).toDate(),
-              end: dayjs(endTime).add(minutesToBlockAfterEvent, "minute").toDate(),
-              title: "busy_time.buffer_time",
-              source: "Buffer Time for seated event (after)",
+              end: dayjs(endTime).add(travelMinutesToBlockAfterEvent, "minute").toDate(),
+              title: isInPersonMeeting ? "ooo_reasons_travel" : "busy_time.buffer_time",
+              source: isInPersonMeeting
+                ? "Travel for seated event (after)"
+                : "Buffer Time for seated event (after)",
             });
           }
           return aggregate;
@@ -173,6 +190,33 @@ export class BusyTimesService {
       if (rest.uid === rescheduleUid) {
         return aggregate;
       }
+
+      if (isInPersonMeeting) {
+        if (travelMinutesToBlockBeforeEvent) {
+          aggregate.push({
+            start: dayjs(startTime).subtract(travelMinutesToBlockBeforeEvent, "minute").toDate(),
+            end: dayjs(startTime).toDate(),
+            title: "ooo_reasons_travel",
+            source: `travel-before-eventType-${eventType?.id}-booking-${id}`,
+          });
+        }
+        aggregate.push({
+          start: dayjs(startTime).toDate(),
+          end: dayjs(endTime).toDate(),
+          title,
+          source: `eventType-${eventType?.id}-booking-${id}`,
+        });
+        if (travelMinutesToBlockAfterEvent) {
+          aggregate.push({
+            start: dayjs(endTime).toDate(),
+            end: dayjs(endTime).add(travelMinutesToBlockAfterEvent, "minute").toDate(),
+            title: "ooo_reasons_travel",
+            source: `travel-after-eventType-${eventType?.id}-booking-${id}`,
+          });
+        }
+        return aggregate;
+      }
+
       aggregate.push({
         start: dayjs(startTime).subtract(minutesToBlockBeforeEvent, "minute").toDate(),
         end: dayjs(endTime).add(minutesToBlockAfterEvent, "minute").toDate(),

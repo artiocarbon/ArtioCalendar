@@ -761,6 +761,7 @@ export class BookingRepository implements IBookingRepository {
           requiresConfirmation: true,
           allowReschedulingPastBookings: true,
           hideOrganizerEmail: true,
+          locations: true,
         },
       },
       ...(seatedEvent && {
