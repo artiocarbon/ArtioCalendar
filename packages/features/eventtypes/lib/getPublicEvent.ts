@@ -9,16 +9,13 @@ import { getSlugOrRequestedSlug } from "@calcom/features/ee/organizations/lib/or
 import { getDefaultEvent, getUsernameList } from "@calcom/features/eventtypes/lib/defaultEvents";
 import { PermissionCheckService } from "@calcom/features/pbac/services/permission-check.service";
 import { UserRepository } from "@calcom/features/users/repositories/UserRepository";
-import { MembershipRole } from "@calcom/prisma/enums";
-import { getOrgOrTeamAvatar } from "@calcom/lib/defaultAvatarImage";
-import { getPlaceholderAvatar } from "@calcom/lib/defaultAvatarImage";
+import { getOrgOrTeamAvatar, getPlaceholderAvatar } from "@calcom/lib/defaultAvatarImage";
 import { getUserAvatarUrl } from "@calcom/lib/getAvatarUrl";
 import { isRecurringEvent, parseRecurringEvent } from "@calcom/lib/isRecurringEvent";
 import { markdownToSafeHTML } from "@calcom/lib/markdownToSafeHTML";
 import type { PrismaClient } from "@calcom/prisma";
-import type { User as UserType } from "@calcom/prisma/client";
-import type { Prisma } from "@calcom/prisma/client";
-import type { Team } from "@calcom/prisma/client";
+import type { Prisma, Team, User as UserType } from "@calcom/prisma/client";
+import { MembershipRole } from "@calcom/prisma/enums";
 import type { BookerLayoutSettings } from "@calcom/prisma/zod-utils";
 import {
   BookerLayouts,
@@ -447,6 +444,25 @@ export const getPublicEvent = async (
             },
           },
         },
+      },
+      select: getPublicEventSelect(fetchAllUsers),
+    });
+  }
+
+  // Single-org mode derives an org slug for every request. If the current user isn't actually
+  // attached to that org in the database, org-scoped lookup can incorrectly return `null`.
+  // Retry as a personal event lookup (no org on the user profile) to unblock public booking pages.
+  if (!event && orgQuery && !isTeamEvent) {
+    event = await prisma.eventType.findFirst({
+      where: {
+        slug: eventSlug,
+        users: {
+          some: {
+            username,
+            profiles: { none: {} },
+          },
+        },
+        team: null,
       },
       select: getPublicEventSelect(fetchAllUsers),
     });
