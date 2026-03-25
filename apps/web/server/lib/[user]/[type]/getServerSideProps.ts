@@ -1,7 +1,3 @@
-import { type GetServerSidePropsContext } from "next";
-import type { Session } from "next-auth";
-import { z } from "zod";
-
 import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
 import type { GetBookingType } from "@calcom/features/bookings/lib/get-booking";
 import { getBookingForReschedule, getBookingForSeatedEvent } from "@calcom/features/bookings/lib/get-booking";
@@ -10,14 +6,14 @@ import { getUsernameList } from "@calcom/features/eventtypes/lib/defaultEvents";
 import type { getPublicEvent } from "@calcom/features/eventtypes/lib/getPublicEvent";
 import { EventRepository } from "@calcom/features/eventtypes/repositories/EventRepository";
 import { shouldHideBrandingForUserEvent } from "@calcom/features/profile/lib/hideBranding";
-import { UserRepository } from "@calcom/features/users/repositories/UserRepository";
 import slugify from "@calcom/lib/slugify";
 import { prisma } from "@calcom/prisma";
 import { BookingStatus, RedirectType } from "@calcom/prisma/enums";
-
 import { handleOrgRedirect } from "@lib/handleOrgRedirect";
-
 import { getUsersInOrgContext } from "@server/lib/[user]/getServerSideProps";
+import type { GetServerSidePropsContext } from "next";
+import type { Session } from "next-auth";
+import { z } from "zod";
 
 type Props = {
   eventData: NonNullable<Awaited<ReturnType<typeof getPublicEvent>>>;
@@ -135,11 +131,7 @@ async function getDynamicGroupPageProps(context: GetServerSidePropsContext) {
     return redirect;
   }
 
-  const userRepo = new UserRepository(prisma);
-  const usersInOrgContext = await userRepo.findUsersByUsername({
-    usernameList: usernames,
-    orgSlug: isValidOrgDomain ? currentOrgDomain : null,
-  });
+  const usersInOrgContext = await getUsersInOrgContext(usernames, isValidOrgDomain ? currentOrgDomain : null);
 
   const users = usersInOrgContext;
 

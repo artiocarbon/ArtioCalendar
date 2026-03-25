@@ -449,9 +449,9 @@ export const getPublicEvent = async (
     });
   }
 
-  // Single-org mode derives an org slug for every request. If the current user isn't actually
-  // attached to that org in the database, org-scoped lookup can incorrectly return `null`.
-  // Retry as a personal event lookup (no org on the user profile) to unblock public booking pages.
+  // Single-org mode derives an org slug for every request. If the user/event isn't stored under
+  // that org (e.g. personal users on a self-hosted instance), org-scoped lookup returns `null`.
+  // Retry by host user only: same slug + username, no org/profile filter.
   if (!event && orgQuery && !isTeamEvent) {
     event = await prisma.eventType.findFirst({
       where: {
@@ -459,7 +459,6 @@ export const getPublicEvent = async (
         users: {
           some: {
             username,
-            profiles: { none: {} },
           },
         },
         team: null,

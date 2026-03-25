@@ -1,14 +1,10 @@
-import type { EmbedProps } from "app/WithEmbedSSR";
-import type { GetServerSideProps } from "next";
 import { encode } from "node:querystring";
-import type { z } from "zod";
-
 import { orgDomainConfig } from "@calcom/features/ee/organizations/lib/orgDomains";
 import { getUsernameList } from "@calcom/features/eventtypes/lib/defaultEvents";
 import { getEventTypesPublic } from "@calcom/features/eventtypes/lib/getEventTypesPublic";
 import { getBrandingForUser } from "@calcom/features/profile/lib/getBranding";
 import { UserRepository } from "@calcom/features/users/repositories/UserRepository";
-import { DEFAULT_DARK_BRAND_COLOR, DEFAULT_LIGHT_BRAND_COLOR } from "@calcom/lib/constants";
+import { DEFAULT_DARK_BRAND_COLOR, DEFAULT_LIGHT_BRAND_COLOR, SINGLE_ORG_SLUG } from "@calcom/lib/constants";
 import { getUserAvatarUrl } from "@calcom/lib/getAvatarUrl";
 import logger from "@calcom/lib/logger";
 import { markdownToSafeHTML } from "@calcom/lib/markdownToSafeHTML";
@@ -19,8 +15,10 @@ import type { EventType, User } from "@calcom/prisma/client";
 import { RedirectType } from "@calcom/prisma/enums";
 import type { EventTypeMetaDataSchema } from "@calcom/prisma/zod-utils";
 import type { UserProfile } from "@calcom/types/UserProfile";
-
 import { handleOrgRedirect } from "@lib/handleOrgRedirect";
+import type { EmbedProps } from "app/WithEmbedSSR";
+import type { GetServerSideProps } from "next";
+import type { z } from "zod";
 
 const log = logger.getSubLogger({ prefix: ["[[pages/[user]]]"] });
 type UserPageProps = {
@@ -220,7 +218,24 @@ export async function getUsersInOrgContext(usernameList: string[], orgSlug: stri
   // the platform organization does not have a domain. In this case there is no org domain but also platform member
   // "User.organization" is not null so "UserRepository.findUsersByUsername" returns empty array and we do this as a last resort
   // call to find platform member.
-  return await userRepo.findPlatformMembersByUsernames({
+  const platformMembers = await userRepo.findPlatformMembersByUsernames({
     usernameList,
   });
+  if (platformMembers.length) {
+    return platformMembers;
+  }
+
+  // NEXT_PUBLIC_SINGLE_ORG_SLUG forces org context on every request, but self-hosted installs often
+  // still have personal users (organizationId null). Resolve them when org-scoped lookup misses.
+  if (orgSlug && SINGLE_ORG_SLUG) {
+    const personalUsers = await userRepo.findUsersByUsername({
+      usernameList,
+      orgSlug: null,
+    });
+    if (personalUsers.length) {
+      return personalUsers;
+    }
+  }
+
+  return [];
 }
