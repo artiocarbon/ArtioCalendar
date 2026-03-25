@@ -34,7 +34,6 @@ import {
 } from "@calcom/ui/components/dropdown";
 import { EmptyScreen } from "@calcom/ui/components/empty-screen";
 import { Label, Switch, TextField } from "@calcom/ui/components/form";
-import { SearchIcon } from "@coss/ui/icons";
 import { HorizontalTabs } from "@calcom/ui/components/navigation";
 import { Skeleton } from "@calcom/ui/components/skeleton";
 import { showToast } from "@calcom/ui/components/toast";
@@ -51,6 +50,7 @@ import {
 } from "@calcom/web/modules/event-types/components/CreateEventTypeDialog";
 import { DuplicateDialog } from "@calcom/web/modules/event-types/components/DuplicateDialog";
 import { InfiniteSkeletonLoader } from "@calcom/web/modules/event-types/components/SkeletonLoader";
+import { SearchIcon } from "@coss/ui/icons";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { TRPCClientError } from "@trpc/client";
 import Link from "next/link";
@@ -129,9 +129,10 @@ const InfiniteTeamsTab: FC<InfiniteTeamsTabProps> = (props: InfiniteTeamsTabProp
       },
     },
     {
-      refetchOnWindowFocus: true,
-      refetchOnMount: true,
-      staleTime: 0,
+      // Speed knob #2: reduce unnecessary client refetching while user navigates.
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      staleTime: 60_000, // 1 minute
       getNextPageParam: (lastPage: { nextCursor: number | null | undefined }) => lastPage.nextCursor,
     }
   );
@@ -432,15 +433,15 @@ export const InfiniteEventTypeList = ({
       if (value) newSearchParams.set(key, value.toString());
       if (value === null) newSearchParams.delete(key);
     }
-        setParamsIfDefined("dialog", "duplicate");
-        setParamsIfDefined("title", eventType.title);
-        setParamsIfDefined("description", eventType.description);
-        setParamsIfDefined("slug", eventType.slug);
-        setParamsIfDefined("id", eventType.id);
-        setParamsIfDefined("length", eventType.length);
-        setParamsIfDefined("pageSlug", group.profile.slug);
-        setParamsIfDefined("schedulingType", eventType.schedulingType);
-        router.push(`${pathname}?${newSearchParams.toString()}`);
+    setParamsIfDefined("dialog", "duplicate");
+    setParamsIfDefined("title", eventType.title);
+    setParamsIfDefined("description", eventType.description);
+    setParamsIfDefined("slug", eventType.slug);
+    setParamsIfDefined("id", eventType.id);
+    setParamsIfDefined("length", eventType.length);
+    setParamsIfDefined("pageSlug", group.profile.slug);
+    setParamsIfDefined("schedulingType", eventType.schedulingType);
+    router.push(`${pathname}?${newSearchParams.toString()}`);
   };
 
   const deleteMutation = trpc.viewer.eventTypes.delete.useMutation({

@@ -4,41 +4,13 @@ import type { RouterOutputs } from "@calcom/trpc/react";
 import { eventTypesRouter } from "@calcom/trpc/server/routers/viewer/eventTypes/_router";
 import { buildLegacyRequest } from "@lib/buildLegacyCtx";
 import { createRouterCaller, getTRPCContext } from "app/_trpc/context";
-import type { PageProps, ReadonlyHeaders, ReadonlyRequestCookies } from "app/_types";
+import type { PageProps } from "app/_types";
 import { _generateMetadata } from "app/_utils";
 import { unstable_cache } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactElement } from "react";
 import { EventTypesWrapper } from "./EventTypesWrapper";
-
-const getCachedEventGroups: (
-  headers: ReadonlyHeaders,
-  cookies: ReadonlyRequestCookies,
-  filters?: {
-    teamIds?: number[] | undefined;
-    userIds?: number[] | undefined;
-    upIds?: string[] | undefined;
-  }
-) => Promise<RouterOutputs["viewer"]["eventTypes"]["getUserEventGroups"]> = unstable_cache(
-  async (
-    headers: ReadonlyHeaders,
-    cookies: ReadonlyRequestCookies,
-    filters?: {
-      teamIds?: number[] | undefined;
-      userIds?: number[] | undefined;
-      upIds?: string[] | undefined;
-    }
-  ): Promise<RouterOutputs["viewer"]["eventTypes"]["getUserEventGroups"]> => {
-    const eventTypesCaller = await createRouterCaller(
-      eventTypesRouter,
-      await getTRPCContext(headers, cookies)
-    );
-    return await eventTypesCaller.getUserEventGroups({ filters });
-  },
-  ["viewer.eventTypes.getUserEventGroups"],
-  { revalidate: 3600 } // seconds
-);
 
 const Page = async ({ searchParams }: PageProps): Promise<ReactElement> => {
   const _searchParams = await searchParams;
@@ -53,7 +25,27 @@ const Page = async ({ searchParams }: PageProps): Promise<ReactElement> => {
   }
 
   const filters = getTeamsFiltersFromQuery(_searchParams);
-  const userEventGroupsData = await getCachedEventGroups(_headers, _cookies, filters);
+  let filtersKey = "all";
+  if (filters) {
+    filtersKey = JSON.stringify({
+      teamIds: filters.teamIds,
+      userIds: filters.userIds,
+      upIds: filters.upIds,
+    });
+  }
+
+  // Speed knob #1: server-side caching keyed by the signed-in user + filters.
+  const userEventGroupsData = await unstable_cache(
+    async (): Promise<RouterOutputs["viewer"]["eventTypes"]["getUserEventGroups"]> => {
+      const eventTypesCaller = await createRouterCaller(
+        eventTypesRouter,
+        await getTRPCContext(_headers, _cookies)
+      );
+      return await eventTypesCaller.getUserEventGroups({ filters });
+    },
+    ["viewer.eventTypes.getUserEventGroups", session.user.id, filtersKey],
+    { revalidate: 300 } // seconds (5 minutes)
+  )();
 
   return <EventTypesWrapper userEventGroupsData={userEventGroupsData} user={session.user} />;
 };
