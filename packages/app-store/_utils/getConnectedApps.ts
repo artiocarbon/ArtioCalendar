@@ -161,7 +161,7 @@ export async function getConnectedApps({
       const teams = credentials
         .filter((c) => c.appId === app.slug && c.teamId)
         .map((c) => {
-          const team = teamMap.get(c.teamId);
+          const team = teamMap.get(c.teamId!);
           if (!team) {
             return null;
           }
