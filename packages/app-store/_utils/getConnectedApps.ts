@@ -147,46 +147,53 @@ export async function getConnectedApps({
     ...(appId ? { where: { slug: appId } } : {}),
   });
   //TODO: Refactor this to pick up only needed fields and prevent more leaking
+  // Create team lookup map for O(1) access
+  const teamMap = new Map(userTeams.map(team => [team.id, team]));
+  
   let apps = await Promise.all(
     enabledApps.map(async ({ credentials: _, credential, key: _2 /* don't leak to frontend */, ...app }) => {
       const userCredentialIds = credentials.filter((c) => c.appId === app.slug && !c.teamId).map((c) => c.id);
       const invalidCredentialIds = credentials
         .filter((c) => c.appId === app.slug && c.invalid)
         .map((c) => c.id);
-      const teams = await Promise.all(
-        credentials
-          .filter((c) => c.appId === app.slug && c.teamId)
-          .map(async (c) => {
-            const team = userTeams.find((team) => team.id === c.teamId);
-            if (!team) {
-              return null;
-            }
-            return {
-              teamId: team.id,
-              name: team.name,
-              logoUrl: team.logoUrl,
-              credentialId: c.id,
-              isAdmin: checkAdminOrOwner(team.members[0].role),
-            };
-          })
-      );
+      
+      // Use map instead of Promise.all for better performance with team lookups
+      const teams = credentials
+        .filter((c) => c.appId === app.slug && c.teamId)
+        .map((c) => {
+          const team = teamMap.get(c.teamId);
+          if (!team) {
+            return null;
+          }
+          return {
+            teamId: team.id,
+            name: team.name,
+            logoUrl: team.logoUrl,
+            credentialId: c.id,
+            isAdmin: checkAdminOrOwner(team.members[0].role),
+          };
+        })
+        .filter(Boolean);
       // type infer as CredentialOwner
       const credentialOwner: CredentialOwner = {
         name: user.name,
         avatar: user?.avatar ?? user?.avatarUrl,
       };
 
-      // We need to know if app is payment type
-      // undefined it means that app don't require app/setup/page
+      // Cache payment app imports to avoid repeated dynamic imports
       let isSetupAlready = undefined;
       if (credential && app.categories.includes("payment")) {
         const paymentAppImportFn = PaymentServiceMap[app.dirName as keyof typeof PaymentServiceMap];
         if (paymentAppImportFn) {
-          const paymentApp = await paymentAppImportFn;
-                              if (paymentApp && "BuildPaymentService" in paymentApp && paymentApp?.BuildPaymentService) {
-                      const createPaymentService = paymentApp.BuildPaymentService;
-                      const paymentInstance = createPaymentService(credential);
-            isSetupAlready = paymentInstance.isSetupAlready();
+          try {
+            const paymentApp = await paymentAppImportFn;
+            if (paymentApp && "BuildPaymentService" in paymentApp && paymentApp?.BuildPaymentService) {
+              const createPaymentService = paymentApp.BuildPaymentService;
+              const paymentInstance = createPaymentService(credential);
+              isSetupAlready = paymentInstance.isSetupAlready();
+            }
+          } catch (error) {
+            console.warn(`Failed to load payment app ${app.dirName}:`, error);
           }
         }
       }

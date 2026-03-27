@@ -45,97 +45,91 @@ export const getAllWorkflows = async ({
   workflowsLockedForUser?: boolean;
   type: WorkflowType;
 }) => {
-  const allWorkflows = entityWorkflows;
+  const allWorkflows = [...entityWorkflows];
+
+  // Execute all workflow queries in parallel for better performance
+  const workflowQueries: Promise<any[]>[] = [];
 
   if (orgId) {
     if (teamId) {
-      const orgTeamWorkflowsRel = await prisma.workflowsOnTeams.findMany({
-        where: {
-          teamId: teamId,
-          workflow: {
-            type,
+      workflowQueries.push(
+        prisma.workflowsOnTeams.findMany({
+          where: {
+            teamId: teamId,
+            workflow: { type },
           },
-        },
-        select: {
-          workflow: {
-            select: workflowSelect,
+          select: {
+            workflow: { select: workflowSelect },
           },
-        },
-      });
-
-      const orgTeamWorkflows = orgTeamWorkflowsRel?.map((workflowRel) => workflowRel.workflow) ?? [];
-      allWorkflows.push(...orgTeamWorkflows);
+        }).then(relations => relations.map(r => r.workflow))
+      );
     } else if (userId) {
-      const orgUserWorkflowsRel = await prisma.workflowsOnTeams.findMany({
-        where: {
-          workflow: {
-            type,
-          },
-          team: {
-            members: {
-              some: {
-                userId: userId,
-                accepted: true,
+      workflowQueries.push(
+        prisma.workflowsOnTeams.findMany({
+          where: {
+            workflow: { type },
+            team: {
+              members: {
+                some: { userId, accepted: true },
               },
             },
           },
-        },
-        select: {
-          workflow: {
-            select: workflowSelect,
+          select: {
+            workflow: { select: workflowSelect },
+            team: true,
           },
-          team: true,
-        },
-      });
-
-      const orgUserWorkflows = orgUserWorkflowsRel.map((workflowRel) => workflowRel.workflow) ?? [];
-      allWorkflows.push(...orgUserWorkflows);
+        }).then(relations => relations.map(r => r.workflow))
+      );
     }
-    // get workflows that are active on all
-    const activeOnAllOrgWorkflows = await prisma.workflow.findMany({
-      where: {
-        teamId: orgId,
-        isActiveOnAll: true,
-        type,
-      },
-      select: workflowSelect,
-    });
-    allWorkflows.push(...activeOnAllOrgWorkflows);
+    
+    workflowQueries.push(
+      prisma.workflow.findMany({
+        where: {
+          teamId: orgId,
+          isActiveOnAll: true,
+          type,
+        },
+        select: workflowSelect,
+      })
+    );
   }
 
   if (teamId) {
-    const activeOnAllTeamWorkflows = await prisma.workflow.findMany({
-      where: {
-        teamId,
-        isActiveOnAll: true,
-        type,
-      },
-      select: workflowSelect,
-    });
-    allWorkflows.push(...activeOnAllTeamWorkflows);
+    workflowQueries.push(
+      prisma.workflow.findMany({
+        where: { teamId, isActiveOnAll: true, type },
+        select: workflowSelect,
+      })
+    );
   }
 
   if ((!teamId || !workflowsLockedForUser) && userId) {
-    const activeOnAllUserWorkflows = await prisma.workflow.findMany({
-      where: {
-        userId,
-        teamId: null,
-        isActiveOnAll: true,
-        type,
-      },
-      select: workflowSelect,
-    });
-    allWorkflows.push(...activeOnAllUserWorkflows);
+    workflowQueries.push(
+      prisma.workflow.findMany({
+        where: {
+          userId,
+          teamId: null,
+          isActiveOnAll: true,
+          type,
+        },
+        select: workflowSelect,
+      })
+    );
   }
 
-  // remove all the duplicate workflows from allWorkflows
-  const seen = new Set();
+  // Execute all queries in parallel
+  if (workflowQueries.length > 0) {
+    const results = await Promise.all(workflowQueries);
+    results.forEach(workflows => allWorkflows.push(...workflows));
+  }
 
-  const workflows = allWorkflows.filter((workflow) => {
-    const duplicate = seen.has(workflow.id);
+  // Remove duplicates efficiently
+  const seen = new Set();
+  const uniqueWorkflows = allWorkflows.filter((workflow) => {
+    if (seen.has(workflow.id)) return false;
     seen.add(workflow.id);
-    return !duplicate;
+    return true;
   });
 
-  return workflows;
+  return uniqueWorkflows;
 };

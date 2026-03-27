@@ -449,19 +449,15 @@ export const getPublicEvent = async (
     });
   }
 
-  // Single-org mode derives an org slug for every request. If the user/event isn't stored under
-  // that org (e.g. personal users on a self-hosted instance), org-scoped lookup returns `null`.
-  // Retry by host user only: same slug + username, no org/profile filter.
-  if (!event && orgQuery && !isTeamEvent) {
+  // Public lookup normally uses the User↔EventType M2M (`users`). Some rows only have `userId`
+  // (owner) set without a `_user_eventtype` row — same situation as getEventTypeById backwards compat.
+  // Match by owner so `/[user]/[slug]` works for those event types (common with manual DB edits).
+  if (!event && !isTeamEvent) {
     event = await prisma.eventType.findFirst({
       where: {
         slug: eventSlug,
-        users: {
-          some: {
-            username,
-          },
-        },
         team: null,
+        OR: [{ users: { some: { username } } }, { owner: { username } }],
       },
       select: getPublicEventSelect(fetchAllUsers),
     });

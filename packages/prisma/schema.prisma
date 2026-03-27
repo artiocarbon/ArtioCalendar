@@ -782,6 +782,8 @@ model Membership {
   @@index([accepted])
   @@index([role])
   @@index([customRoleId])
+  @@index([userId, accepted])
+  @@index([teamId, accepted])
 }
 
 model VerificationToken {
