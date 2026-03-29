@@ -9,7 +9,7 @@ import { loadTranslations } from "@calcom/i18n/server";
 
 import { buildLegacyCtx, decodeParams } from "@lib/buildLegacyCtx";
 
-import { getServerSideProps } from "@server/lib/[user]/[type]/getServerSideProps";
+import { getServerSidePropsOptimized } from "@server/lib/[user]/[type]/getServerSidePropsOptimized";
 
 import type { PageProps as LegacyPageProps } from "~/users/views/users-type-public-view";
 import LegacyPage from "~/users/views/users-type-public-view";
@@ -50,7 +50,7 @@ export const generateMetadata = async ({ params, searchParams }: PageProps) => {
     },
   };
 };
-const getData = withAppDirSsr<LegacyPageProps>(getServerSideProps);
+const getData = withAppDirSsr<LegacyPageProps>(getServerSidePropsOptimized);
 
 const ServerPage = async ({ params, searchParams }: PageProps) => {
   const legacyCtx = buildLegacyCtx(await headers(), await cookies(), await params, await searchParams);

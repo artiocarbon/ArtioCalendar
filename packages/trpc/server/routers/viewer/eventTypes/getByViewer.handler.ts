@@ -1,4 +1,4 @@
-import { getEventTypesByViewer } from "@calcom/features/eventtypes/lib/getEventTypesByViewer";
+import { getEventTypesByViewerOptimized } from "@calcom/features/eventtypes/lib/getEventTypesByViewerOptimized";
 import { checkRateLimitAndThrowError } from "@calcom/lib/checkRateLimitAndThrowError";
 import type { PrismaClient } from "@calcom/prisma";
 
@@ -22,5 +22,5 @@ export const getByViewerHandler = async ({ ctx, input }: GetByViewerOptions) => 
   const filters = input?.filters;
   const forRoutingForms = input?.forRoutingForms;
 
-  return await getEventTypesByViewer(user, filters, forRoutingForms);
+  return await getEventTypesByViewerOptimized(user, filters, forRoutingForms);
 };

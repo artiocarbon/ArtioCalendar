@@ -10,6 +10,7 @@ export { AttendeeLocationChangeEmail } from "./AttendeeLocationChangeEmail";
 export { AttendeeRequestEmail } from "./AttendeeRequestEmail";
 export { AttendeeRescheduledEmail } from "./AttendeeRescheduledEmail";
 export { AttendeeScheduledEmail } from "./AttendeeScheduledEmail";
+export { AttendeeScheduledEmailEnhanced } from "./AttendeeScheduledEmailEnhanced";
 export { AttendeeUpdatedEmail } from "./AttendeeUpdatedEmail";
 export { AttendeeWasRequestedToRescheduleEmail } from "./AttendeeWasRequestedToRescheduleEmail";
 export { BookingRedirectEmailNotification } from "./BookingRedirectEmailNotification";
