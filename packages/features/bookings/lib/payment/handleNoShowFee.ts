@@ -102,7 +102,7 @@ export const handleNoShowFee = async ({
     endTime: dayjs(booking.endTime).format(),
     organizer: {
       email: booking?.userPrimaryEmail ?? booking.user?.email ?? "",
-      name: booking.user?.name || "Nameless",
+      name: booking.user?.name || booking.user?.email || "Nameless",
       timeZone: booking.user?.timeZone || "",
       language: { translate: tOrganizer, locale: booking.user?.locale ?? "en" },
     },

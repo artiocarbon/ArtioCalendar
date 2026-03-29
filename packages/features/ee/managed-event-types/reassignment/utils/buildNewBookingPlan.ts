@@ -35,11 +35,11 @@ export function buildNewBookingPlan({
       : null;
 
   const newBookingTitle = getEventName({
-    attendeeName: originalBookingFull.attendees[0]?.name || "Nameless",
+    attendeeName: originalBookingFull.attendees[0]?.name || originalBookingFull.attendees[0]?.email || "Nameless",
     eventType: targetEventTypeDetails.title,
     eventName: targetEventTypeDetails.eventName,
     teamName: targetEventTypeDetails.team?.name,
-    host: newUser.name || "Nameless",
+    host: newUser.name || newUser.username || newUser.email || "Nameless",
     location: originalBookingFull.location || "",
     bookingFields,
     eventDuration: dayjs(originalBookingFull.endTime).diff(originalBookingFull.startTime, "minutes"),

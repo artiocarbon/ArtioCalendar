@@ -1439,13 +1439,13 @@ async function handler(
   const evtName = !eventType?.isDynamic ? eventType.eventName : responses?.title;
   const eventNameObject = {
     //TODO: Can we have an unnamed attendee? If not, I would really like to throw an error here.
-    attendeeName: fullName || "Nameless",
+    attendeeName: fullName || organizerUser.username || organizerUser.email || "Nameless",
     eventType: eventType.title,
     eventName: evtName,
     // we send on behalf of team if >1 round robin attendee | collective
     teamName: eventType.schedulingType === "COLLECTIVE" || users.length > 1 ? eventType.team?.name : null,
     // TODO: Can we have an unnamed organizer? If not, I would really like to throw an error here.
-    host: organizerUser.name || "Nameless",
+    host: organizerUser.name || organizerUser.username || organizerUser.email || "Nameless",
     location: bookingLocation,
     eventDuration: dayjs(reqBody.end).diff(reqBody.start, "minutes"),
     bookingFields: { ...responses },
@@ -1519,7 +1519,7 @@ async function handler(
     type: eventType.slug,
     organizer: {
       id: organizerUser.id,
-      name: organizerUser.name || "Nameless",
+      name: organizerUser.name || organizerUser.username || organizerUser.email || "Nameless",
       email: organizerEmail,
       username: organizerUser.username || undefined,
       usernameInOrg: organizerOrganizationProfile?.username || undefined,

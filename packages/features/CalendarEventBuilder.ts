@@ -36,7 +36,7 @@ async function _buildPersonFromUser(
   const translate = await getTranslation(user.locale ?? "en", "common");
   return {
     id: user.id,
-    name: user.name || "Nameless",
+    name: user.name || user.username || user.email || "Nameless",
     email: user.email,
     username: user.username || undefined,
     timeZone: user.timeZone,

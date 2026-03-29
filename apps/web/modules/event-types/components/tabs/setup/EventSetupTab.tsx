@@ -183,7 +183,7 @@ export const EventSetupTab = (
                   {!isManagedEventType
                     ? team
                       ? (hasOrgBranding ? "" : "team/") + team.slug
-                      : formMethods.getValues("users")[0].username
+                      : formMethods.getValues("users")[0]?.username || "undefined"
                     : t("username_placeholder")}
                   /
                 </span>

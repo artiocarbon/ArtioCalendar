@@ -73,7 +73,7 @@ export class BookingEmailAndSmsTaskService implements BookingTasks {
       : [];
 
     const eventNameObject = {
-      attendeeName: calendarEvent.organizer.name || "Nameless",
+      attendeeName: calendarEvent.organizer.name || calendarEvent.organizer.username || calendarEvent.organizer.email || "Nameless",
       eventType: eventType.title,
       eventName: eventType.eventName,
       // we send on behalf of team if >1 round robin attendee | collective
@@ -81,7 +81,7 @@ export class BookingEmailAndSmsTaskService implements BookingTasks {
         eventType.schedulingType === "COLLECTIVE" || bookedTeamMembers.length > 1
           ? eventType.team?.name
           : null,
-      host: calendarEvent.organizer.name || "Nameless",
+      host: calendarEvent.organizer.name || calendarEvent.organizer.username || calendarEvent.organizer.email || "Nameless",
       location: booking.location,
       eventDuration: dayjs(booking.endTime).diff(booking.startTime, "minutes"),
       bookingFields: eventType.bookingFields as JsonObject,

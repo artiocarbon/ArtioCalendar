@@ -399,7 +399,7 @@ const handleMarkNoShow = async ({
               organizer: {
                 id: booking.user?.id,
                 email: booking.userPrimaryEmail || booking.user?.email || "Email-less",
-                name: booking.user?.name || "Nameless",
+                name: booking.user?.name || booking.user?.username || booking.user?.email || "Nameless",
                 username: booking.user?.username || undefined,
                 timeZone: organizer?.timeZone || "UTC",
                 timeFormat: getTimeFormatStringFromUserTimeFormat(booking.user?.timeFormat),

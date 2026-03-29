@@ -330,7 +330,7 @@ export const confirmHandler = async ({ ctx, input }: ConfirmOptions) => {
     organizer: {
       id: booking.user?.id,
       email: booking?.userPrimaryEmail || booking.user?.email || "Email-less",
-      name: booking.user?.name || "Nameless",
+      name: booking.user?.name || booking.user?.username || booking.user?.email || "Nameless",
       username: booking.user?.username || undefined,
       usernameInOrg: organizerOrganizationProfile?.username || undefined,
       timeZone: booking.user?.timeZone || "Europe/London",

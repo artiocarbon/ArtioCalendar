@@ -17,9 +17,12 @@ type MeOptions = {
   input: TGetInputSchema;
 };
 
-export const getHandler = async ({ ctx, input }: MeOptions) => {
+/**
+ * Optimized version of getHandler that combines multiple database queries
+ * to reduce round trips and improve performance.
+ */
+export const getOptimizedHandler = async ({ ctx, input }: MeOptions) => {
   const crypto = await import("node:crypto");
-
   const { user: sessionUser, session } = ctx;
 
   // Combine multiple queries into parallel operations
@@ -86,11 +89,9 @@ export const getHandler = async ({ ctx, input }: MeOptions) => {
   const teamsWithWritePermission = permissionCheckResult;
   const canUpdateTeams = teamsWithWritePermission.length > 0;
 
-  const userMetadataPrased = userMetadata.parse(user.metadata);
+  const userMetadataParsed = userMetadata.parse(user.metadata);
 
-  // Destructuring here only makes it more illegible
-  // pick only the part we want to expose in the API
-
+  // Build profile data
   const profileData = user.organization?.isPlatform
     ? {
         organizationId: null,
@@ -145,7 +146,7 @@ export const getHandler = async ({ ctx, input }: MeOptions) => {
     requiresBookerEmailVerification: user.requiresBookerEmailVerification,
     ...profileData,
     secondaryEmails,
-    isPremium: userMetadataPrased?.isPremium,
+    isPremium: userMetadataParsed?.isPremium,
     ...(passwordAdded ? { passwordAdded } : {}),
     canUpdateTeams,
   };

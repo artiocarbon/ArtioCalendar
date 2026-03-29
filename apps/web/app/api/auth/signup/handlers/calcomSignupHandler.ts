@@ -47,11 +47,13 @@ const handler: CustomNextApiHandler = async (body, usernameStatus, query) => {
     email: _email,
     password,
     token,
+    name,
   } = signupSchema
     .pick({
       email: true,
       password: true,
       token: true,
+      name: true,
     })
     .parse(body);
 
@@ -215,6 +217,7 @@ const handler: CustomNextApiHandler = async (body, usernameStatus, query) => {
           where: { email },
           update: {
             username,
+            name,
             emailVerified: new Date(Date.now()),
             identityProvider: IdentityProvider.CAL,
             password: {
@@ -227,6 +230,7 @@ const handler: CustomNextApiHandler = async (body, usernameStatus, query) => {
           },
           create: {
             username,
+            name,
             email,
             emailVerified: new Date(Date.now()),
             identityProvider: IdentityProvider.CAL,
@@ -271,6 +275,7 @@ const handler: CustomNextApiHandler = async (body, usernameStatus, query) => {
       await prisma.user.create({
         data: {
           username,
+          name,
           email,
           locked: shouldLockByDefault,
           password: { create: { hash: hashedPassword } },

@@ -89,11 +89,11 @@ function EventTypeSingleLayout({
   });
   const EventTypeTabs = tabsNavigation;
   const permalink = `${bookerUrl}/${
-    team ? `${!team.parentId ? "team/" : ""}${team.slug}` : formMethods.getValues("users")[0].username
+    team ? `${!team.parentId ? "team/" : ""}${team.slug}` : formMethods.getValues("users")[0]?.username || "undefined"
   }/${eventType.slug}`;
 
   const embedLink = `${
-    team ? `team/${team.slug}` : formMethods.getValues("users")[0].username
+    team ? `team/${team.slug}` : formMethods.getValues("users")[0]?.username || "undefined"
   }/${formMethods.getValues("slug")}`;
   const isManagedEvent = formMethods.getValues("schedulingType") === SchedulingType.MANAGED ? "_managed" : "";
 

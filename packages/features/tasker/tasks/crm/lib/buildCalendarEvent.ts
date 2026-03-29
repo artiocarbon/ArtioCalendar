@@ -92,7 +92,7 @@ const buildCalendarEvent: (bookingUid: string) => Promise<CalendarEvent> = async
     bookerUrl,
     organizer: {
       email: booking.user.email,
-      name: booking.user.name || "Nameless",
+      name: booking.user.name || booking.user.username || booking.user.email || "Nameless",
       username: booking.user?.username || "No username",
       language: { translate: organizerT, locale: booking.user?.locale ?? "en" },
       timeZone: booking.user.timeZone,

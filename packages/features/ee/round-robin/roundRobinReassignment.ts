@@ -240,13 +240,13 @@ export const roundRobinReassignment = async ({
     }
 
     const eventNameObject = {
-      attendeeName: responses?.name || "Nameless",
+      attendeeName: responses?.name || responses?.email || "Nameless",
       eventType: eventType.title,
       eventName: eventType.eventName,
       // we send on behalf of team if >1 round robin attendee | collective
       teamName: teamMembers.length > 1 ? eventType.team?.name : null,
       // TODO: Can we have an unnamed organizer? If not, I would really like to throw an error here.
-      host: organizer.name || "Nameless",
+      host: organizer.name || organizer.username || organizer.email || "Nameless",
       location: bookingLocation || "integrations:daily",
       bookingFields: { ...responses },
       eventDuration: dayjs(booking.endTime).diff(booking.startTime, "minutes"),

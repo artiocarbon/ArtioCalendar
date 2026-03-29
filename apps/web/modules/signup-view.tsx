@@ -470,6 +470,16 @@ export default function Signup({
                           }
                         />
                       ) : null}
+                      {/* Name */}
+                      <TextField
+                        id="signup-name"
+                        {...register("name")}
+                        label={t("name")}
+                        placeholder="John Doe"
+                        type="text"
+                        autoComplete="name"
+                        data-testid="signup-namefield"
+                      />
                       {/* Email */}
                       <TextField
                         id="signup-email"
