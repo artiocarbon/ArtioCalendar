@@ -9,7 +9,7 @@ import slugify from "@calcom/lib/slugify";
 import { prisma } from "@calcom/prisma";
 import { BookingStatus, RedirectType } from "@calcom/prisma/enums";
 import { handleOrgRedirect } from "@lib/handleOrgRedirect";
-import { getUsersInOrgContextOptimized } from "@server/lib/[user]/getServerSidePropsOptimized";
+import { getUsersInOrgContextOptimized } from "@server/lib/[user]/getUsersInOrgContextOptimized";
 import type { GetServerSidePropsContext } from "next";
 import type { Session } from "next-auth";
 import { z } from "zod";
@@ -281,7 +281,7 @@ async function getUserPagePropsOptimized(context: GetServerSidePropsContext) {
       eventTypeId: eventData.id,
       owner: user,
     }),
-    isSEOIndexable: allowSEOIndexable,
+    isSEOIndexable: allowSEOIndexing,
     themeBasis: username,
     bookingUid: bookingUid ? `${bookingUid}` : null,
     rescheduleUid: null,

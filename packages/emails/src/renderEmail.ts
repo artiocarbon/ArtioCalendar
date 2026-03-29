@@ -7,7 +7,7 @@ async function renderEmail<K extends keyof typeof templates>(
   const Component = templates[template];
   const ReactDOMServer = (await import("react-dom/server")).default;
   return (
-    ReactDOMServer.renderToStaticMarkup(Component(props))
+    ReactDOMServer.renderToStaticMarkup(Component(props as any))
       // Remove `<RawHtml />` injected scripts
       .replace(/<script><\/script>/g, "")
       .replace(

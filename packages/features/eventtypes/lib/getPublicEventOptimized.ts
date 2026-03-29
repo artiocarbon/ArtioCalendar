@@ -196,11 +196,11 @@ async function isCurrentlyAvailable({
   periodCountCalendarDays,
 }: {
   prisma: PrismaClient;
-  periodType: Prisma.EventType["periodType"];
-  periodDays: Prisma.EventType["periodDays"] | null;
-  periodStartDate: Prisma.EventType["periodStartDate"] | null;
-  periodEndDate: Prisma.EventType["periodEndDate"] | null;
-  periodCountCalendarDays: Prisma.EventType["periodCountCalendarDays"] | null;
+  periodType: Prisma["EventType"]["periodType"];
+  periodDays: Prisma["EventType"]["periodDays"] | null;
+  periodStartDate: Prisma["EventType"]["periodStartDate"] | null;
+  periodEndDate: Prisma["EventType"]["periodEndDate"] | null;
+  periodCountCalendarDays: Prisma["EventType"]["periodCountCalendarDays"] | null;
 }) {
   if (!periodType) return true;
 
@@ -431,8 +431,9 @@ export const getPublicEventOptimized = async (
 
   // Batch enrich all users at once
   const userRepo = new UserRepository(prisma);
+  const userIdsArray = Array.from(allUserIds).map(id => ({ id, username: null }));
   const enrichedUsersMap = new Map(
-    (await userRepo.enrichUsersWithTheirProfiles(Array.from(allUserIds)))
+    (await userRepo.enrichUsersWithTheirProfiles(userIdsArray))
       .map(user => [user.id, user])
   );
 
@@ -462,9 +463,9 @@ export const getPublicEventOptimized = async (
     })(),
 
     // Get default schedule if needed
-    (!eventWithUserProfiles.schedule && eventWithUserProfiles.owner?.defaultScheduleId)
+    (!eventWithUserProfiles.schedule && enrichedOwner?.defaultScheduleId)
       ? prisma.schedule.findUnique({
-          where: { id: eventWithUserProfiles.owner?.defaultScheduleId },
+          where: { id: enrichedOwner?.defaultScheduleId },
           select: { id: true, timeZone: true },
         })
       : Promise.resolve(null),
