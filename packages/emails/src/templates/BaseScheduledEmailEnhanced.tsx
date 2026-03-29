@@ -5,13 +5,13 @@ import type { CalendarEvent, Person } from "@calcom/types/Calendar";
 import type { TFunction } from "i18next";
 import {
   AppsStatus,
-  BaseEmailHtmlEnhanced,
-  InfoEnhanced,
+  Info,
   LocationInfo,
   ManageLink,
   UserFieldsResponses,
   WhenInfo,
   WhoInfo,
+  BaseEmailHtml,
 } from "../components";
 import { PersonInfo } from "../components/WhoInfo";
 import { EnhancedButton } from "../components/EnhancedButton";
@@ -63,7 +63,7 @@ export const BaseScheduledEmailEnhanced = (
   }
 
   return (
-    <BaseEmailHtmlEnhanced
+    <BaseEmailHtml
       hideLogo={Boolean(props.calEvent.platformClientId) || Boolean(props.calEvent.hideBranding)}
       headerType={props.headerType || "checkCircle"}
       subject={props.subject || subject}
@@ -77,28 +77,13 @@ export const BaseScheduledEmailEnhanced = (
       callToAction={
         props.callToAction === null
           ? null
-          : props.callToAction || (
-              <div style={{ textAlign: "center" }}>
-                <EnhancedButton href={`https://calendar.artiocarbon.com/${props.attendee.username}/${props.calEvent.slug}`}>
-                  {t("manage_booking")}
-                </EnhancedButton>
-                <p style={{
-                  color: "#6B7280",
-                  fontSize: "13px",
-                  margin: "12px 0 0 0",
-                  textAlign: "center",
-                  lineHeight: "1.4"
-                }}>
-                  {t("booking_confirmation_subtitle")}
-                </p>
-              </div>
-            )
+          : props.callToAction || <ManageLink attendee={props.attendee} calEvent={props.calEvent} />
       }
       subtitle={props.subtitle || <>{t("emailed_you_and_any_other_attendees")}</>}>
       
       {/* Enhanced styling for rejection/cancellation reasons */}
       {props.calEvent.rejectionReason && (
-        <InfoEnhanced 
+        <Info 
           label={t("rejection_reason")} 
           description={props.calEvent.rejectionReason} 
           withSpacer 
@@ -106,7 +91,7 @@ export const BaseScheduledEmailEnhanced = (
       )}
       
       {props.calEvent.cancellationReason && (
-        <InfoEnhanced
+        <Info
           label={t(
             props.calEvent.cancellationReason.startsWith("$RCH$")
               ? "reason_for_reschedule"
@@ -122,7 +107,7 @@ export const BaseScheduledEmailEnhanced = (
       {/* Enhanced styling for reassignment info */}
       {props.reassigned && !props.reassigned.byUser && (
         <>
-          <InfoEnhanced
+          <Info
             label={t("reassigned_to")}
             description={
               <PersonInfo name={props.reassigned.name || undefined} email={props.reassigned.email} />
@@ -130,34 +115,34 @@ export const BaseScheduledEmailEnhanced = (
             withSpacer
           />
           {props.reassigned?.reason && (
-            <InfoEnhanced label={t("reason")} description={props.reassigned.reason} withSpacer />
+            <Info label={t("reason")} description={props.reassigned.reason} withSpacer />
           )}
         </>
       )}
       
       {props.reassigned && props.reassigned.byUser && (
         <>
-          <InfoEnhanced label={t("reassigned_by")} description={props.reassigned.byUser} withSpacer />
+          <Info label={t("reassigned_by")} description={props.reassigned.byUser} withSpacer />
           {props.reassigned?.reason && (
-            <InfoEnhanced label={t("reason")} description={props.reassigned.reason} withSpacer />
+            <Info label={t("reason")} description={props.reassigned.reason} withSpacer />
           )}
         </>
       )}
       
-      {rescheduledBy && <InfoEnhanced label={t("rescheduled_by")} description={rescheduledBy} withSpacer />}
+      {rescheduledBy && <Info label={t("rescheduled_by")} description={rescheduledBy} withSpacer />}
       
       {/* Core event information with enhanced styling */}
-      <InfoEnhanced label={t("what")} description={props.calEvent.title} withSpacer />
+      <Info label={t("what")} description={props.calEvent.title} withSpacer />
       <WhenInfo timeFormat={timeFormat} calEvent={props.calEvent} t={t} timeZone={timeZone} locale={locale} />
       <WhoInfo calEvent={props.calEvent} t={t} />
       <LocationInfo calEvent={props.calEvent} t={t} />
-      <InfoEnhanced label={t("description")} description={props.calEvent.description} withSpacer formatted />
-      <InfoEnhanced label={t("additional_notes")} description={props.calEvent.additionalNotes} withSpacer formatted />
+      <Info label={t("description")} description={props.calEvent.description} withSpacer formatted />
+      <Info label={t("additional_notes")} description={props.calEvent.additionalNotes} withSpacer formatted />
       
       {props.includeAppsStatus && <AppsStatus calEvent={props.calEvent} t={t} />}
       
       {props.isOrganizer && props.calEvent.assignmentReason && (
-        <InfoEnhanced
+        <Info
           label={t("assignment_reason")}
           description={`${t(props.calEvent.assignmentReason.category)}${props.calEvent.assignmentReason.details ? `: ${props.calEvent.assignmentReason.details}` : ""}`}
           withSpacer
@@ -168,7 +153,7 @@ export const BaseScheduledEmailEnhanced = (
       
       {/* Enhanced payment info styling */}
       {props.calEvent.paymentInfo?.amount && (
-        <InfoEnhanced
+        <Info
           label={props.calEvent.paymentInfo.paymentOption === "HOLD" ? t("no_show_fee") : t("price")}
           description={formatPrice(
             props.calEvent.paymentInfo.amount,
@@ -178,6 +163,6 @@ export const BaseScheduledEmailEnhanced = (
           withSpacer
         />
       )}
-    </BaseEmailHtmlEnhanced>
+    </BaseEmailHtml>
   );
 };

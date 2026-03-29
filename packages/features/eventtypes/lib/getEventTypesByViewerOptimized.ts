@@ -54,8 +54,8 @@ export const getEventTypesByViewerOptimized = async (user: User, filters?: Filte
     new PermissionCheckService().getTeamIdsWithPermissions({
       userId: user.id,
       permissions: [
-        { permission: "eventType.read", fallbackRoles: [MembershipRole.MEMBER, MembershipRole.ADMIN, MembershipRole.OWNER] },
-        { permission: "eventType.update", fallbackRoles: [MembershipRole.ADMIN, MembershipRole.OWNER] }
+        { permission: "eventType.read" as any, fallbackRoles: [MembershipRole.MEMBER, MembershipRole.ADMIN, MembershipRole.OWNER] },
+        { permission: "eventType.update" as any, fallbackRoles: [MembershipRole.ADMIN, MembershipRole.OWNER] }
       ]
     }),
     
@@ -91,8 +91,8 @@ export const getEventTypesByViewerOptimized = async (user: User, filters?: Filte
   }
 
   // Extract permission results
-  const teamsWithEventTypeReadPermission = permissionResults.get("eventType.read") || [];
-  const teamsWithEventTypeUpdatePermission = permissionResults.get("eventType.update") || [];
+  const teamsWithEventTypeReadPermission = permissionResults[0] || [];
+  const teamsWithEventTypeUpdatePermission = permissionResults[1] || [];
 
   const memberships = profileMemberships.map((membership) => ({
     ...membership,
@@ -149,12 +149,12 @@ export const getEventTypesByViewerOptimized = async (user: User, filters?: Filte
   // Optimized mapEventType function using pre-enriched users
   const mapEventType = async (eventType: any) => {
     const eventTypeUsers = eventType?.hosts?.length 
-      ? eventType.hosts.map(host => host.user)
+      ? eventType.hosts.map((host: any) => host.user)
       : eventType.users;
-    const enrichedUsers = eventTypeUsers.map(user => enrichedUsersMap.get(user.id)).filter(Boolean);
+    const enrichedUsers = eventTypeUsers.map((user: any) => enrichedUsersMap.get(user.id)).filter(Boolean);
 
     const children = eventType.children || [];
-    const enrichedChildren = children.map((c) => ({
+    const enrichedChildren = children.map((c: any) => ({
       ...c,
       users: c.users.map((user: any) => enrichedUsersMap.get(user.id)).filter((user: any) => !!user),
     }));
@@ -253,7 +253,7 @@ export const getEventTypesByViewerOptimized = async (user: User, filters?: Filte
           ? `team/${team.slug}`
           : team.slug ? (!team.parentId ? `team/${team.slug}` : `${team.slug}`) : null;
 
-        const teamEventTypes = teamEventTypes.find(t => t.membership.team.id === team.id)?.eventTypes || [];
+        const currentTeamEventTypes = teamEventTypes.find((t: any) => t.membership.team.id === team.id)?.eventTypes || [];
         const teamParentMetadata = team.parent ? teamMetadataSchema.parse(team.parent.metadata) : null;
 
         return {
@@ -273,10 +273,10 @@ export const getEventTypesByViewerOptimized = async (user: User, filters?: Filte
             membershipCount: team.members.length,
             readOnly: !teamsWithEventTypeReadPermission.includes(team.id),
           },
-          eventTypes: teamEventTypes
+          eventTypes: currentTeamEventTypes
             .filter(filterByTeamIds)
-            .filter((evType) => evType.userId === null || evType.userId === user.id)
-            .filter((evType) => 
+            .filter((evType: any) => evType.userId === null || evType.userId === user.id)
+            .filter((evType: any) => 
               !teamsWithEventTypeUpdatePermission.includes(team.id)
                 ? evType.schedulingType !== SchedulingType.MANAGED
                 : true

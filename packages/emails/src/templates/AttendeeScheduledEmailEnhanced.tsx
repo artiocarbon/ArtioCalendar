@@ -1,15 +1,15 @@
 import type { CalendarEvent, Person } from "@calcom/types/Calendar";
 
-import { BaseScheduledEmailEnhanced } from "./BaseScheduledEmailEnhanced";
+import { BaseScheduledEmail } from "./BaseScheduledEmail";
 
 export const AttendeeScheduledEmailEnhanced = (
   props: {
     calEvent: CalendarEvent;
     attendee: Person;
-  } & Partial<React.ComponentProps<typeof BaseScheduledEmailEnhanced>>
+  } & Partial<React.ComponentProps<typeof BaseScheduledEmail>>
 ) => {
   return (
-    <BaseScheduledEmailEnhanced
+    <BaseScheduledEmail
       locale={props.attendee.language.locale}
       timeZone={props.attendee.timeZone}
       t={props.attendee.language.translate}
