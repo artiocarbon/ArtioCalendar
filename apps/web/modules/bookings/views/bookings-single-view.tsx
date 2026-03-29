@@ -1039,7 +1039,7 @@ export default function Success(props: PageProps) {
                           </div>
                         </div>
                       </>
-                    }
+                    )}
                   </>
                 )}
                 {isFeedbackMode &&

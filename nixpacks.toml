@@ -1,0 +1,17 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "yarn"]
+
+[phases.build]
+cmds = [
+  "yarn install",
+  "yarn --cwd packages/prisma workspace @calcom/prisma run db:migrate:deploy",
+  "yarn --cwd apps/web workspace @calcom/web run build"
+]
+
+[start]
+cmd = "yarn start"
+
+[variables]
+NODE_ENV = "production"
+NEXTAUTH_URL = "${ Railway_Public_Domain }"
+NEXT_PUBLIC_WEBAPP_URL = "${ Railway_Public_Domain }"

@@ -178,6 +178,7 @@ const PaymentPage: FC<PaymentPageProps> = (props) => {
                     <div className="text-default mt-4 text-center dark:text-gray-300">{t("refunded")}</div>
                   )}
                 </div>
+              </div>
             </div>
           </div>
         </div>
