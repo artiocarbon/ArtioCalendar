@@ -51,13 +51,18 @@ export const getEventTypesByViewerOptimized = async (user: User, filters?: Filte
     ProfileRepository.findByUpIdWithAuth(userProfile.upId, user.id),
     
     // Combined permission checks
-    new PermissionCheckService().getTeamIdsWithPermissions({
-      userId: user.id,
-      permissions: [
-        { permission: "eventType.read" as any, fallbackRoles: [MembershipRole.MEMBER, MembershipRole.ADMIN, MembershipRole.OWNER] },
-        { permission: "eventType.update" as any, fallbackRoles: [MembershipRole.ADMIN, MembershipRole.OWNER] }
-      ]
-    }),
+    Promise.all([
+      new PermissionCheckService().getTeamIdsWithPermission({
+        userId: user.id,
+        permission: "eventType.read" as any,
+        fallbackRoles: [MembershipRole.MEMBER, MembershipRole.ADMIN, MembershipRole.OWNER]
+      }),
+      new PermissionCheckService().getTeamIdsWithPermission({
+        userId: user.id,
+        permission: "eventType.update" as any,
+        fallbackRoles: [MembershipRole.ADMIN, MembershipRole.OWNER]
+      })
+    ]),
     
     // Profile memberships with teams and event types
     MembershipRepository.findAllByUpIdIncludeTeamWithMembersAndEventTypes(
@@ -91,8 +96,7 @@ export const getEventTypesByViewerOptimized = async (user: User, filters?: Filte
   }
 
   // Extract permission results
-  const teamsWithEventTypeReadPermission = permissionResults[0] || [];
-  const teamsWithEventTypeUpdatePermission = permissionResults[1] || [];
+  const [teamsWithEventTypeReadPermission, teamsWithEventTypeUpdatePermission] = permissionResults;
 
   const memberships = profileMemberships.map((membership) => ({
     ...membership,
@@ -141,8 +145,9 @@ export const getEventTypesByViewerOptimized = async (user: User, filters?: Filte
 
   // Batch enrich all users at once
   const userRepo = new UserRepository(prisma);
+  const userIdsArray = Array.from(allUserIds).map(id => ({ id, username: null }));
   const enrichedUsersMap = new Map(
-    (await userRepo.enrichUsersWithTheirProfiles(Array.from(allUserIds)))
+    (await userRepo.enrichUsersWithTheirProfiles(userIdsArray))
       .map(user => [user.id, user])
   );
 
@@ -305,11 +310,11 @@ export const getEventTypesByViewerOptimized = async (user: User, filters?: Filte
     const eventTypeGroups = payload.eventTypeGroups.map((group) => {
       return {
         ...group,
-        eventTypes: group.eventTypes.map((eventType) => {
+        eventTypes: group.eventTypes.map((eventType: any) => {
           const { users, ...rest } = eventType;
           return {
             ...rest,
-            userIds: users.map((user) => {
+            userIds: users.map((user: any) => {
               allUsersAcrossAllEventTypes.set(user.id, user);
               return user.id;
             }),
