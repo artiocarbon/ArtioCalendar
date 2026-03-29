@@ -48,7 +48,6 @@ import { HavingTroubleFindingTime } from "./HavingTroubleFindingTime";
 import { Header } from "@calcom/features/bookings/components/Header";
 import { InstantBooking } from "./InstantBooking";
 import { LargeCalendar } from "./LargeCalendar";
-import { OverlayCalendar } from "./OverlayCalendar/OverlayCalendar";
 import { RedirectToInstantMeetingModal } from "./RedirectToInstantMeetingModal";
 import { BookerSection } from "@calcom/features/bookings/components/Section";
 import { SlotSelectionModalHeader } from "./SlotSelectionModalHeader";
@@ -180,8 +179,6 @@ const BookerComponent = ({
     renderConfirmNotVerifyEmailButtonCond,
     isVerificationCodeSending,
   } = verifyEmail;
-
-  const { overlayBusyDates, isOverlayCalendarEnabled, connectedCalendars, onToggleCalendar } = calendars;
 
   const scrolledToTimeslotsOnce = useRef(false);
   const embedUiConfig = useEmbedUiConfig();
@@ -414,21 +411,8 @@ const BookerComponent = ({
                     isMobile={isMobile}
                     nextSlots={nextSlots}
                     renderOverlay={() => {
-                      if (isEmbed) return null;
-                      return (
-                        <OverlayCalendar
-                          isOverlayCalendarEnabled={isOverlayCalendarEnabled}
-                          connectedCalendars={connectedCalendars}
-                          overlayBusyDates={overlayBusyDates}
-                          onToggleCalendar={onToggleCalendar}
-                          hasSession={hasSession}
-                          handleClickContinue={onClickOverlayContinue}
-                          handleSwitchStateChange={onOverlaySwitchStateChange}
-                          handleClickNoCalendar={() => {
-                            onOverlayClickNoCalendar();
-                          }}
-                        />
-                      );
+                      // Overlay calendar feature removed
+                      return null;
                     }}
                   />
                 )}

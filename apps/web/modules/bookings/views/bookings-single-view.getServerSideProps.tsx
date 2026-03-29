@@ -6,6 +6,7 @@ import { eventTypeMetaDataSchemaWithTypedApps } from "@calcom/app-store/zod-util
 import { orgDomainConfig } from "@calcom/ee/organizations/lib/orgDomains";
 import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
 import getBookingInfo from "@calcom/features/bookings/lib/getBookingInfo";
+import getBookingInfoOptimized from "@calcom/features/bookings/lib/getBookingInfoOptimized";
 import { BookingRepository } from "@calcom/features/bookings/repositories/BookingRepository";
 import { isTeamMember } from "@calcom/features/ee/teams/lib/queries";
 import { getDefaultEvent } from "@calcom/features/eventtypes/lib/defaultEvents";
@@ -70,7 +71,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   if (maybeBookingUidFromSeat.uid) uid = maybeBookingUidFromSeat.uid;
   if (maybeBookingUidFromSeat.seatReferenceUid) seatReferenceUid = maybeBookingUidFromSeat.seatReferenceUid;
 
-  const { bookingInfoRaw, bookingInfo } = await getBookingInfo(uid);
+  const { bookingInfoRaw, bookingInfo } = await getBookingInfoOptimized(uid);
 
   if (!bookingInfoRaw) {
     return {
@@ -78,30 +79,40 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     } as const;
   }
 
-  let rescheduledToUid: string | null = null;
-  if (bookingInfo.rescheduled) {
-    const bookingRepo = new BookingRepository(prisma);
-    const rescheduledTo = await bookingRepo.findFirstBookingByReschedule({
-      originalBookingUid: bookingInfo.uid,
-    });
-    rescheduledToUid = rescheduledTo?.uid ?? null;
-  }
+  // Parallel execution of reschedule queries and event type fetching
+  const [
+    rescheduledTo,
+    previousBooking,
+    eventTypeRaw
+  ] = await Promise.all([
+    // Reschedule to booking
+    bookingInfo.rescheduled
+      ? (async () => {
+          const bookingRepo = new BookingRepository(prisma);
+          const rescheduledTo = await bookingRepo.findFirstBookingByReschedule({
+            originalBookingUid: bookingInfo.uid,
+          });
+          return rescheduledTo?.uid ?? null;
+        })()
+      : Promise.resolve(null),
 
-  let previousBooking: {
-    rescheduledBy: string | null;
-    uid: string;
-  } | null = null;
+    // Previous booking info
+    bookingInfo.fromReschedule
+      ? (async () => {
+          const bookingRepo = new BookingRepository(prisma);
+          return await bookingRepo.findReschedulerByUid({
+            uid: bookingInfo.fromReschedule,
+          });
+        })()
+      : Promise.resolve(null),
 
-  if (bookingInfo.fromReschedule) {
-    const bookingRepo = new BookingRepository(prisma);
-    previousBooking = await bookingRepo.findReschedulerByUid({
-      uid: bookingInfo.fromReschedule,
-    });
-  }
+    // Event type data
+    !bookingInfoRaw.eventTypeId
+      ? Promise.resolve(getDefaultEvent(eventTypeSlug || ""))
+      : getEventTypesFromDB(bookingInfoRaw.eventTypeId)
+  ]);
 
-  const eventTypeRaw = !bookingInfoRaw.eventTypeId
-    ? getDefaultEvent(eventTypeSlug || "")
-    : await getEventTypesFromDB(bookingInfoRaw.eventTypeId);
+  let rescheduledToUid = rescheduledTo;
   if (!eventTypeRaw) {
     return {
       notFound: true,
@@ -189,23 +200,43 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
 
   const canViewHiddenData = isLoggedInUserHost || isLoggedInUserTeamMember;
 
+  // Parallel execution of seats handling, payment lookup, and internal notes
+  const [payment, internalNotes] = await Promise.all([
+    // Payment data
+    prisma.payment.findFirst({
+      where: {
+        bookingId: bookingInfo.id,
+      },
+      select: {
+        appId: true,
+        success: true,
+        refunded: true,
+        currency: true,
+        amount: true,
+        paymentOption: true,
+      },
+    }),
+
+    // Internal notes presets
+    (async () => {
+      const teamId = eventType.team?.id ?? eventType.parent?.teamId ?? null;
+      if (!teamId || !canViewHiddenData) return [];
+      return await prisma.internalNotePreset.findMany({
+        where: {
+          teamId,
+        },
+        select: {
+          id: true,
+          name: true,
+          cancellationReason: true,
+        },
+      });
+    })()
+  ]);
+
   if (bookingInfo !== null && eventType.seatsPerTimeSlot) {
     await handleSeatsEventTypeOnBooking(eventType, bookingInfo, seatReferenceUid, isLoggedInUserHost);
   }
-
-  const payment = await prisma.payment.findFirst({
-    where: {
-      bookingId: bookingInfo.id,
-    },
-    select: {
-      appId: true,
-      success: true,
-      refunded: true,
-      currency: true,
-      amount: true,
-      paymentOption: true,
-    },
-  });
 
   if (!canViewHiddenData) {
     for (const key in bookingInfo.responses) {
@@ -217,22 +248,6 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   }
 
   const { currentOrgDomain } = orgDomainConfig(context.req);
-
-  async function getInternalNotePresets(teamId: number | null) {
-    if (!teamId || !canViewHiddenData) return [];
-    return await prisma.internalNotePreset.findMany({
-      where: {
-        teamId,
-      },
-      select: {
-        id: true,
-        name: true,
-        cancellationReason: true,
-      },
-    });
-  }
-
-  const internalNotes = await getInternalNotePresets(eventType.team?.id ?? eventType.parent?.teamId ?? null);
 
   // Filter out organizer information if hideOrganizerEmail is true
   const sanitizedPreviousBooking =

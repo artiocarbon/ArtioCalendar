@@ -32,8 +32,8 @@ export const LargeCalendar = ({
   const setSelectedTimeslot = useBookerStoreContext((state) => state.setSelectedTimeslot);
   const selectedEventDuration = useBookerStoreContext((state) => state.selectedDuration);
   const overlayEvents = useOverlayCalendarStore((state) => state.overlayBusyDates);
-  const displayOverlay =
-    getQueryParam("overlayCalendar") === "true" || localStorage?.getItem("overlayCalendarSwitchDefault");
+  // Overlay calendar feature disabled - always set to false
+  const displayOverlay = false;
   const { timezone } = useBookerTime();
 
   const eventDuration = selectedEventDuration || event?.data?.length || 30;

@@ -17,9 +17,8 @@ export const useCalendars = ({ hasSession }: UseCalendarsProps) => {
   const searchParams = useSearchParams();
   const selectedDate = useBookerStore((state) => state.selectedDate);
   const { timezone } = useTimePreferences();
-  const switchEnabled =
-    searchParams?.get("overlayCalendar") === "true" ||
-    localStorage?.getItem("overlayCalendarSwitchDefault") === "true";
+  // Overlay calendar feature disabled
+  const switchEnabled = false;
 
   const [set, setSet] = useState<Set<ToggledConnectedCalendars>>(() => {
     const storedValue = localStorage.getItem("toggledConnectedCalendars");

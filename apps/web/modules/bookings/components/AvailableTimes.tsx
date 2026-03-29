@@ -108,8 +108,8 @@ const SlotItem = ({
     return eventData?.price > 0 && !Number.isNaN(paymentAppData.price) && paymentAppData.price > 0;
   }, [eventData]);
 
-  const overlayCalendarToggled =
-    getQueryParam("overlayCalendar") === "true" || localStorage.getItem("overlayCalendarSwitchDefault");
+  // Overlay calendar feature disabled
+  const overlayCalendarToggled = false;
 
   const { timeFormat, timezone } = useBookerTime();
   const bookingData = useBookerStoreContext((state) => state.bookingData);

@@ -131,8 +131,8 @@ export const AvailableTimeSlots = ({
 
   const { slotsPerDay, toggleConfirmButton } = useSlotsForAvailableDates(dates, scheduleData?.slots);
 
-  const overlayCalendarToggled =
-    getQueryParam("overlayCalendar") === "true" || localStorage.getItem("overlayCalendarSwitchDefault");
+  // Overlay calendar feature disabled
+  const overlayCalendarToggled = false;
 
   const onTimeSelect = useCallback(
     (time: string, attendees: number, seatsPerTimeSlot?: number | null, bookingUid?: string) => {
