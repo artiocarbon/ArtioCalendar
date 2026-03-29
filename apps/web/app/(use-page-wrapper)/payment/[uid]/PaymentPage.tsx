@@ -178,14 +178,6 @@ const PaymentPage: FC<PaymentPageProps> = (props) => {
                     <div className="text-default mt-4 text-center dark:text-gray-300">{t("refunded")}</div>
                   )}
                 </div>
-                {!props.profile.hideBranding && (
-                  <div className="text-muted dark:text-inverted mt-4 border-t pt-4 text-center text-xs dark:border-gray-900">
-                    <a href={`${WEBSITE_URL}/signup`}>
-                      {t("create_booking_link_with_calcom", { appName: APP_NAME })}
-                    </a>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </div>
