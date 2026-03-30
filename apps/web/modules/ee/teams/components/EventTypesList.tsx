@@ -110,10 +110,10 @@ export function EventTypesList({ table, teamId }: Props) {
                     if (events.length === 0 || !teamId) return null;
                     return (
                       <Fragment key={teamId}>
-                        {events.map((event) => {
+                        {events.map((event: { id: number; hosts: { userId: number }[] }) => {
                           const hosts = event.hosts;
-                          const areAllUsersHostForEventType = selectedUsers.every((user) =>
-                            hosts.some((host) => host.userId === user.id)
+                          const areAllUsersHostForEventType = selectedUsers.every((user: { id: number }) =>
+                            hosts.some((host: { userId: number }) => host.userId === user.id)
                           );
                           const isSelected =
                             (selectedEvents.has(event.id) || areAllUsersHostForEventType) &&

@@ -168,7 +168,7 @@ async function getDynamicGroupPagePropsOptimized(context: GetServerSidePropsCont
     eventData: {
       ...eventData,
       metadata: {
-        ...eventData.metadata,
+        ...(typeof eventData.metadata === 'object' && eventData.metadata !== null ? eventData.metadata : {}),
         multipleDuration: [15, 30, 45, 60, 90],
       },
     },

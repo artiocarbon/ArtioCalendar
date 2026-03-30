@@ -113,12 +113,12 @@ export function EventTypesList({ table, orgTeams }: Props) {
 
                     if (events.length === 0 || !teamId) return null;
 
-                    const ids = events.map((event) => event.id);
+                    const ids = events.map((event: { id: number }) => event.id);
                     const areAllUsersHostForTeam = selectedUsers.every((user) =>
-                      events.every((event) => event.hosts.some((host) => host.userId === user.id))
+                      events.every((event: { hosts: { userId: number }[] }) => event.hosts.some((host: { userId: number }) => host.userId === user.id))
                     );
                     const isSelected = ids.every(
-                      (id) =>
+                      (id: number) =>
                         selectedEvents.has(id) || (areAllUsersHostForTeam && !removeHostFromEvents.has(id))
                     );
                     return (
@@ -133,12 +133,12 @@ export function EventTypesList({ table, orgTeams }: Props) {
                               setRemoveHostFromEvents(new Set());
                             } else {
                               const eventIdsWhereAllUsersAreHosts = events
-                                .filter((event) =>
+                                .filter((event: { id: number; hosts: { userId: number }[] }) =>
                                   selectedUsers.every((user) =>
-                                    event.hosts.some((host) => host.userId === user.id)
+                                    event.hosts.some((host: { userId: number }) => host.userId === user.id)
                                   )
                                 )
-                                .map((event) => event.id);
+                                .map((event: { id: number }) => event.id);
 
                               addValue(
                                 removeHostFromEvents,
@@ -154,10 +154,10 @@ export function EventTypesList({ table, orgTeams }: Props) {
                           text={team.profile.name || ""}
                           key={team.profile.name}
                         />
-                        {events.map((event) => {
+                        {events.map((event: { id: number; title: string; hosts: { userId: number }[] }) => {
                           const hosts = event.hosts;
-                          const areAllUsersHostForEventType = selectedUsers.every((user) =>
-                            hosts.some((host) => host.userId === user.id)
+                          const areAllUsersHostForEventType = selectedUsers.every((user: { id: number }) =>
+                            hosts.some((host: { userId: number }) => host.userId === user.id)
                           );
                           const isSelected =
                             (selectedEvents.has(event.id) || areAllUsersHostForEventType) &&
@@ -183,7 +183,7 @@ export function EventTypesList({ table, orgTeams }: Props) {
                                     removeValue(selectedEvents, setSelectedEvents, [event.id]);
                                     // if no event from current team is selected, remove the team
                                     setSelectedEvents((selectedEvents) => {
-                                      if (!ids.some((id) => selectedEvents.has(id))) {
+                                      if (!ids.some((id: number) => selectedEvents.has(id))) {
                                         setSelectedTeams((selectedTeams) => {
                                           const updatedTeams = new Set(selectedTeams);
                                           updatedTeams.delete(teamId);

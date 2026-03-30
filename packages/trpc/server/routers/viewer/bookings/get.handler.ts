@@ -1008,7 +1008,7 @@ function addStatusesQueryFilters(query: BookingsUnionQuery, statuses: InputBySta
             return and([
               eb("Booking.endTime", ">=", new Date()),
               or([
-                and([eb("Booking.recurringEventId", "is not", null), eb("Booking.status", "=", "accepted")]),
+                and([eb("Booking.recurringEventId", "is not", null), eb("Booking.status", "not in", ["cancelled", "rejected"])]),
                 and([
                   eb("Booking.recurringEventId", "is", null),
                   eb("Booking.status", "not in", ["cancelled", "rejected"]),

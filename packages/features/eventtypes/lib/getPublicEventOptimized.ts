@@ -14,7 +14,7 @@ import { getUserAvatarUrl } from "@calcom/lib/getAvatarUrl";
 import { isRecurringEvent, parseRecurringEvent } from "@calcom/lib/isRecurringEvent";
 import { markdownToSafeHTML } from "@calcom/lib/markdownToSafeHTML";
 import type { PrismaClient } from "@calcom/prisma";
-import type { Prisma, Team, User as UserType } from "@calcom/prisma/client";
+import type { Prisma, Team, User as UserType, EventType } from "@calcom/prisma/client";
 import { MembershipRole } from "@calcom/prisma/enums";
 import type { BookerLayoutSettings } from "@calcom/prisma/zod-utils";
 import {
@@ -196,11 +196,11 @@ async function isCurrentlyAvailable({
   periodCountCalendarDays,
 }: {
   prisma: PrismaClient;
-  periodType: Prisma["EventType"]["periodType"];
-  periodDays: Prisma["EventType"]["periodDays"] | null;
-  periodStartDate: Prisma["EventType"]["periodStartDate"] | null;
-  periodEndDate: Prisma["EventType"]["periodEndDate"] | null;
-  periodCountCalendarDays: Prisma["EventType"]["periodCountCalendarDays"] | null;
+  periodType: EventType["periodType"];
+  periodDays: EventType["periodDays"] | null;
+  periodStartDate: EventType["periodStartDate"] | null;
+  periodEndDate: EventType["periodEndDate"] | null;
+  periodCountCalendarDays: EventType["periodCountCalendarDays"] | null;
 }) {
   if (!periodType) return true;
 
@@ -463,9 +463,9 @@ export const getPublicEventOptimized = async (
     })(),
 
     // Get default schedule if needed
-    (!eventWithUserProfiles.schedule && enrichedOwner?.defaultScheduleId)
+    (!eventWithUserProfiles.schedule && finalEvent.owner?.defaultScheduleId)
       ? prisma.schedule.findUnique({
-          where: { id: enrichedOwner?.defaultScheduleId },
+          where: { id: finalEvent.owner?.defaultScheduleId },
           select: { id: true, timeZone: true },
         })
       : Promise.resolve(null),

@@ -13,7 +13,7 @@ import { BookerLayouts } from "@calcom/prisma/zod-utils";
 import { Button } from "@calcom/ui/components/button";
 import { ButtonGroup } from "@calcom/ui/components/buttonGroup";
 import { ToggleGroup } from "@calcom/ui/components/form";
-import { CalendarIcon, Columns3Icon, Grid3x3Icon } from "@coss/ui/icons";
+import { Columns3Icon, Grid3x3Icon } from "@coss/ui/icons";
 import { Tooltip } from "@calcom/ui/components/tooltip";
 
 import { TimeFormatToggle } from "@calcom/features/bookings/components/TimeFormatToggle";
@@ -69,18 +69,6 @@ export function Header({
   if (isMonthView) {
     return (
       <div className="flex gap-2">
-        {isMyLink && !isEmbed ? (
-          <Tooltip content={t("troubleshooter_tooltip")} side="bottom">
-            <Button
-              color="primary"
-              target="_blank"
-              href={`${WEBAPP_URL}/availability/troubleshoot?eventType=${eventSlug}`}>
-              {t("need_help")}
-            </Button>
-          </Tooltip>
-        ) : (
-          renderOverlay?.()
-        )}
         <LayoutToggleWithData
           layout={layout}
           enabledLayouts={enabledLayouts}
@@ -191,16 +179,6 @@ const LayoutToggle = ({
 
   const layoutOptions = useMemo(() => {
     return [
-      {
-        value: BookerLayouts.MONTH_VIEW,
-        label: (
-          <>
-            <CalendarIcon className="h-4 w-4" />
-            <span className="sr-only">${t("switch_monthly")}</span>
-          </>
-        ),
-        tooltip: t("switch_monthly"),
-      },
       {
         value: BookerLayouts.WEEK_VIEW,
         label: (

@@ -53,16 +53,7 @@ const getUserBookingOptimized = async (uid: string) => {
     seatsReferences,
     tracking,
     assignmentReason,
-    description,
-    customInputs,
-    smsReminderNumber,
-    recurringEventId,
-    location,
-    metadata,
-    cancellationReason,
-    cancelledBy,
-    responses,
-    rejectionReason,
+    additionalBookingFields,
   ] = await Promise.all([
     // Event type info
     bookingInfo.eventTypeId
@@ -79,16 +70,16 @@ const getUserBookingOptimized = async (uid: string) => {
       : null,
     
     // Seats references
-    prisma.seatsReference.findMany({
-      where: { bookingUid: uid },
+    prisma.bookingSeat.findMany({
+      where: { booking: { uid } },
       select: {
         referenceUid: true,
       },
     }),
     
     // Tracking data
-    prisma.bookingTracking.findUnique({
-      where: { bookingUid: uid },
+    prisma.tracking.findUnique({
+      where: { bookingId: bookingInfo.id },
       select: {
         utm_source: true,
         utm_medium: true,
@@ -99,8 +90,8 @@ const getUserBookingOptimized = async (uid: string) => {
     }),
     
     // Assignment reason
-    prisma.bookingAssignmentReason.findFirst({
-      where: { bookingUid: uid },
+    prisma.assignmentReason.findFirst({
+      where: { bookingId: bookingInfo.id },
       select: {
         reasonEnum: true,
         reasonString: true,
@@ -132,16 +123,7 @@ const getUserBookingOptimized = async (uid: string) => {
   // Combine all data
   return {
     ...bookingInfo,
-    description,
-    customInputs,
-    smsReminderNumber,
-    recurringEventId,
-    location,
-    metadata,
-    cancellationReason,
-    cancelledBy,
-    responses,
-    rejectionReason,
+    ...additionalBookingFields,
     eventType,
     seatsReferences,
     tracking,
