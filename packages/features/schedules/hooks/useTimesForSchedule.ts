@@ -2,6 +2,7 @@ import { shallow } from "zustand/shallow";
 
 import dayjs from "@calcom/dayjs";
 import { useBookerStoreContext } from "@calcom/features/bookings/Booker/BookerStoreProvider";
+import { BookerLayouts } from "@calcom/prisma/zod-utils";
 import type { BookerState } from "@calcom/features/bookings/Booker/types";
 import { getPrefetchMonthCount } from "@calcom/features/bookings/Booker/utils/getPrefetchMonthCount";
 import { isPrefetchNextMonthEnabled } from "@calcom/features/bookings/Booker/utils/isPrefetchNextMonthEnabled";
@@ -49,6 +50,11 @@ interface UsePrefetchParams {
 
 const usePrefetch = ({ date, month, bookerLayout, bookerState }: UsePrefetchParams) => {
   if (!bookerLayout) {
+    return null;
+  }
+
+  const isMonthView = bookerLayout.layout === BookerLayouts.MONTH_VIEW || bookerLayout.layout === "mobile";
+  if (isMonthView && bookerState !== "selecting_time") {
     return null;
   }
 

@@ -45,6 +45,8 @@ export type Booking = NonNullable<
 >;
 export type OrganizerData = Awaited<ReturnType<typeof getOrganizerData>>;
 
+const log = logger.getSubLogger({ prefix: ["addGuestsHandler"] });
+
 export const addGuestsHandler = async ({
   ctx,
   input,
@@ -88,10 +90,18 @@ export const addGuestsHandler = async ({
 
   const evt = await buildCalendarEvent(booking, organizer, attendeesList);
 
-  await updateCalendarEvent(booking, evt);
+  try {
+    await updateCalendarEvent(booking, evt);
+  } catch (error) {
+    log.error("Failed to update calendar attendees while adding guests", error);
+  }
 
   if (emailsEnabled) {
-    await sendGuestNotifications(evt, booking, uniqueGuestEmails);
+    try {
+      await sendGuestNotifications(evt, booking, uniqueGuestEmails);
+    } catch (error) {
+      log.error("Failed to send guest notifications", error);
+    }
   }
 
   const bookingEventHandlerService = getBookingEventHandlerService();
@@ -102,17 +112,21 @@ export const addGuestsHandler = async ({
     ? await featuresRepository.checkIfTeamHasFeature(organizationId, "booking-audit")
     : false;
 
-  await bookingEventHandlerService.onAttendeeAdded({
-    bookingUid: booking.uid,
-    actor: makeUserActor(user.uuid),
-    organizationId,
-    source: actionSource,
-    auditData: {
-      added: uniqueGuestEmails,
-    },
-    context,
-    isBookingAuditEnabled,
-  });
+  try {
+    await bookingEventHandlerService.onAttendeeAdded({
+      bookingUid: booking.uid,
+      actor: makeUserActor(user.uuid),
+      organizationId,
+      source: actionSource,
+      auditData: {
+        added: uniqueGuestEmails,
+      },
+      context,
+      isBookingAuditEnabled,
+    });
+  } catch (error) {
+    log.error("Failed to record booking audit event for added guests", error);
+  }
 
   return { message: "Guests added" };
 };
@@ -404,10 +418,18 @@ export async function sendGuestNotifications(
     logger: logger,
   });
 
+  const metadataParseResult = eventTypeMetaDataSchemaWithTypedApps.safeParse(
+    booking?.eventType?.metadata ?? null
+  );
+  if (!metadataParseResult.success) {
+    log.error("Failed to parse event type metadata for guest notifications", metadataParseResult.error);
+  }
+  const eventTypeMetadata = metadataParseResult.success ? metadataParseResult.data : null;
+
   await emailsAndSmsHandler.handleAddGuests({
     evt,
     eventType: {
-      metadata: eventTypeMetaDataSchemaWithTypedApps.parse(booking?.eventType?.metadata),
+      metadata: eventTypeMetadata,
       schedulingType: booking.eventType?.schedulingType || null,
     },
     newGuests: uniqueGuests,
