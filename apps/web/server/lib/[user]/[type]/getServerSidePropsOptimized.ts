@@ -127,7 +127,7 @@ async function getDynamicGroupPagePropsOptimized(context: GetServerSidePropsCont
   }
 
   // Optimized: Parallel user lookup and event lookup
-  const [usersInOrgContext, eventData] = await Promise.all([
+  const [usersInOrgContextResult, eventDataResult] = await Promise.all([
     getUsersInOrgContextOptimized(usernames, isValidOrgDomain ? currentOrgDomain : null),
     EventRepositoryOptimized.getPublicEvent(
       {
@@ -139,6 +139,29 @@ async function getDynamicGroupPagePropsOptimized(context: GetServerSidePropsCont
       session?.user?.id
     ),
   ]);
+
+  let usersInOrgContext = usersInOrgContextResult;
+  let eventData = eventDataResult;
+
+  // In single-org setups, dynamic links can include users that are only resolvable in personal context.
+  // Retry once without org scope before returning 404.
+  if ((!usersInOrgContext.length || !eventData) && isValidOrgDomain) {
+    const [fallbackUsers, fallbackEventData] = await Promise.all([
+      getUsersInOrgContextOptimized(usernames, null),
+      EventRepositoryOptimized.getPublicEvent(
+        {
+          username: usernames.join("+"),
+          eventSlug: slug,
+          org: null,
+          fromRedirectOfNonOrgLink: context.query.orgRedirection === "true",
+        },
+        session?.user?.id
+      ),
+    ]);
+
+    usersInOrgContext = usersInOrgContext.length ? usersInOrgContext : fallbackUsers;
+    eventData = eventData ?? fallbackEventData;
+  }
 
   if (!usersInOrgContext.length || !eventData) {
     return { notFound: true } as const;
