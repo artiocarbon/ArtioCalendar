@@ -440,14 +440,30 @@ export const getPublicEvent = async (
         team: null,
       };
 
+  // For personal booking links, prefer events owned by the requested username.
+  // This avoids resolving to shared/collective events with the same slug that merely include the user.
+  let event =
+    !isTeamEvent
+      ? await prisma.eventType.findFirst({
+          where: {
+            slug: eventSlug,
+            team: null,
+            owner: { username },
+          },
+          select: getPublicEventSelect(fetchAllUsers),
+        })
+      : null;
+
   // In case it's not a group event, it's either a single user or a team, and we query that data.
-  let event = await prisma.eventType.findFirst({
-    where: {
-      slug: eventSlug,
-      ...usersOrTeamQuery,
-    },
-    select: getPublicEventSelect(fetchAllUsers),
-  });
+  if (!event) {
+    event = await prisma.eventType.findFirst({
+      where: {
+        slug: eventSlug,
+        ...usersOrTeamQuery,
+      },
+      select: getPublicEventSelect(fetchAllUsers),
+    });
+  }
 
   // If no event was found, check for platform org user event
   if (!event && !orgQuery) {
