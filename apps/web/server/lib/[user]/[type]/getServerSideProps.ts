@@ -131,16 +131,6 @@ async function getDynamicGroupPageProps(context: GetServerSidePropsContext) {
     return redirect;
   }
 
-  const usersInOrgContext = await getUsersInOrgContext(usernames, isValidOrgDomain ? currentOrgDomain : null);
-
-  const users = usersInOrgContext;
-
-  if (!users.length) {
-    return {
-      notFound: true,
-    } as const;
-  }
-
   // We use this to both prefetch the query on the server,
   // as well as to check if the event exist, so we c an show a 404 otherwise.
 

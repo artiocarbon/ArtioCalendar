@@ -9,7 +9,6 @@ import slugify from "@calcom/lib/slugify";
 import { prisma } from "@calcom/prisma";
 import { BookingStatus, RedirectType } from "@calcom/prisma/enums";
 import { handleOrgRedirect } from "@lib/handleOrgRedirect";
-import { getUsersInOrgContextOptimized } from "@server/lib/[user]/getUsersInOrgContextOptimized";
 import type { GetServerSidePropsContext } from "next";
 import type { Session } from "next-auth";
 import { z } from "zod";
@@ -126,48 +125,33 @@ async function getDynamicGroupPagePropsOptimized(context: GetServerSidePropsCont
     return redirect;
   }
 
-  // Optimized: Parallel user lookup and event lookup
-  const [usersInOrgContextResult, eventDataResult] = await Promise.all([
-    getUsersInOrgContextOptimized(usernames, isValidOrgDomain ? currentOrgDomain : null),
-    EventRepositoryOptimized.getPublicEvent(
-      {
-        username: usernames.join("+"),
-        eventSlug: slug,
-        org,
-        fromRedirectOfNonOrgLink: context.query.orgRedirection === "true",
-      },
-      session?.user?.id
-    ),
-  ]);
-
-  let usersInOrgContext = usersInOrgContextResult;
-  let eventData = eventDataResult;
+  let eventData = await EventRepositoryOptimized.getPublicEvent(
+    {
+      username: usernames.join("+"),
+      eventSlug: slug,
+      org,
+      fromRedirectOfNonOrgLink: context.query.orgRedirection === "true",
+    },
+    session?.user?.id
+  );
 
   // In single-org setups, dynamic links can include users that are only resolvable in personal context.
   // Retry once without org scope before returning 404.
-  if ((!usersInOrgContext.length || !eventData) && isValidOrgDomain) {
-    const [fallbackUsers, fallbackEventData] = await Promise.all([
-      getUsersInOrgContextOptimized(usernames, null),
-      EventRepositoryOptimized.getPublicEvent(
-        {
-          username: usernames.join("+"),
-          eventSlug: slug,
-          org: null,
-          fromRedirectOfNonOrgLink: context.query.orgRedirection === "true",
-        },
-        session?.user?.id
-      ),
-    ]);
-
-    usersInOrgContext = usersInOrgContext.length ? usersInOrgContext : fallbackUsers;
-    eventData = eventData ?? fallbackEventData;
+  if (!eventData && isValidOrgDomain) {
+    eventData = await EventRepositoryOptimized.getPublicEvent(
+      {
+        username: usernames.join("+"),
+        eventSlug: slug,
+        org: null,
+        fromRedirectOfNonOrgLink: context.query.orgRedirection === "true",
+      },
+      session?.user?.id
+    );
   }
 
-  if (!usersInOrgContext.length || !eventData) {
+  if (!eventData) {
     return { notFound: true } as const;
   }
-
-  const users = usersInOrgContext;
 
   // Redirect if no routing form response and redirect URL is configured
   const hasRoutingFormResponse =

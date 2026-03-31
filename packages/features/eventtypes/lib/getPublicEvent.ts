@@ -294,11 +294,29 @@ export const getPublicEvent = async (
   const orgQuery = org ? getSlugOrRequestedSlug(org) : null;
   // In case of dynamic group event, we fetch user's data and use the default event.
   if (usernameList.length > 1) {
-    const usersInOrgContext = await new UserRepository(prisma).findUsersByUsername({
+    const userRepo = new UserRepository(prisma);
+    const usersInOrgContext = await userRepo.findUsersByUsername({
       usernameList,
       orgSlug: org,
     });
-    const users = usersInOrgContext;
+    let users = usersInOrgContext;
+    if (!users.length) {
+      const platformMembers = await userRepo.findPlatformMembersByUsernames({
+        usernameList,
+      });
+      if (platformMembers.length) {
+        users = platformMembers;
+      }
+    }
+    if (!users.length && org) {
+      const personalUsers = await userRepo.findUsersByUsername({
+        usernameList,
+        orgSlug: null,
+      });
+      if (personalUsers.length) {
+        users = personalUsers;
+      }
+    }
     if (!users.length) {
       return null;
     }
