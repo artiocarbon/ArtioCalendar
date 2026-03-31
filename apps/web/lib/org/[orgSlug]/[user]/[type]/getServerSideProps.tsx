@@ -12,16 +12,17 @@ import { getServerSideProps as GSSUserTypePage } from "@server/lib/[user]/[type]
 
 const paramsSchema = z.object({
   orgSlug: z.string().transform((s) => slugify(s)),
-  user: z.string().transform((s) => getUsernameList(s)),
+  user: z.string(),
   type: z.string().transform((s) => slugify(s)),
 });
 
 export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
-  const { user: teamOrUserSlugOrDynamicGroup, orgSlug, type } = paramsSchema.parse(ctx.params);
-  const isDynamicGroup = Array.isArray(teamOrUserSlugOrDynamicGroup);
+  const { user, orgSlug, type } = paramsSchema.parse(ctx.params);
+  const usernames = getUsernameList(user);
+  const isDynamicGroup = usernames.length > 1;
 
   if (isDynamicGroup) {
-    const params = { user: teamOrUserSlugOrDynamicGroup, type };
+    const params = { user, type };
     return GSSUserTypePage({
       ...ctx,
       params: {
@@ -35,7 +36,7 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
     });
   }
 
-  const firstUsername = teamOrUserSlugOrDynamicGroup;
+  const firstUsername = usernames[0];
 
   const team = await prisma.team.findFirst({
     where: {
@@ -64,7 +65,7 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
       },
     });
   }
-  const params = { user: teamOrUserSlugOrDynamicGroup, type };
+  const params = { user, type };
   return GSSUserTypePage({
     ...ctx,
     params: {
