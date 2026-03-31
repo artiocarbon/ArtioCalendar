@@ -338,7 +338,21 @@ export class AvailableSlotsService {
       usernameList: [username],
       orgSlug: isValidOrgDomain ? currentOrgDomain : null,
     });
-    return user?.id;
+    if (user?.id) {
+      return user.id;
+    }
+
+    // In org-domain contexts, personal users can still be booked on root links.
+    // Fallback to personal lookup so slots resolution doesn't pick an unrelated same-slug event.
+    if (isValidOrgDomain) {
+      const [personalUser] = await userRepo.findUsersByUsername({
+        usernameList: [username],
+        orgSlug: null,
+      });
+      return personalUser?.id;
+    }
+
+    return undefined;
   }
 
   private async getEventTypeId({
