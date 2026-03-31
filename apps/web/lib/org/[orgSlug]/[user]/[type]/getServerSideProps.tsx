@@ -18,13 +18,25 @@ const paramsSchema = z.object({
 
 export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
   const { user: teamOrUserSlugOrDynamicGroup, orgSlug, type } = paramsSchema.parse(ctx.params);
-  
-  // For dynamic groups, use the first username to check if it's a team
-  // Otherwise, use the single username
-  const firstUsername = Array.isArray(teamOrUserSlugOrDynamicGroup) 
-    ? teamOrUserSlugOrDynamicGroup[0] 
-    : teamOrUserSlugOrDynamicGroup;
-    
+  const isDynamicGroup = Array.isArray(teamOrUserSlugOrDynamicGroup);
+
+  if (isDynamicGroup) {
+    const params = { user: teamOrUserSlugOrDynamicGroup, type };
+    return GSSUserTypePage({
+      ...ctx,
+      params: {
+        ...ctx.params,
+        ...params,
+      },
+      query: {
+        ...ctx.query,
+        ...params,
+      },
+    });
+  }
+
+  const firstUsername = teamOrUserSlugOrDynamicGroup;
+
   const team = await prisma.team.findFirst({
     where: {
       slug: slugify(firstUsername),
