@@ -125,7 +125,10 @@ const ProfileView = ({ user }: Props) => {
   });
 
   const resendVerifyEmailMutation = trpc.viewer.auth.resendVerifyEmail.useMutation();
-  const sendSenderEmailVerificationMutation = trpc.viewer.auth.sendSenderEmailVerification.useMutation({
+  const {
+    mutate: sendSenderEmailVerification,
+    isPending: isSendingSenderEmailVerification,
+  } = trpc.viewer.auth.sendSenderEmailVerification.useMutation({
     onSuccess: () => {
       showToast(t("verification_email_sent"), "success");
     },
@@ -737,8 +740,8 @@ const ProfileForm = ({
                 <Button
                   color="secondary"
                   size="sm"
-                  onClick={() => sendSenderEmailVerificationMutation.mutate()}
-                  loading={sendSenderEmailVerificationMutation.isPending}>
+                  onClick={() => sendSenderEmailVerification()}
+                  loading={isSendingSenderEmailVerification}>
                   {t("verify")}
                 </Button>
               )

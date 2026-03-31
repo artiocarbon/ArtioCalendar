@@ -299,6 +299,9 @@ export const getPublicEvent = async (
       orgSlug: org,
     });
     const users = usersInOrgContext;
+    if (!users.length) {
+      return null;
+    }
 
     const defaultEvent = getDefaultEvent(eventSlug);
     let locations = defaultEvent.locations ? (defaultEvent.locations as LocationObject[]) : [];
