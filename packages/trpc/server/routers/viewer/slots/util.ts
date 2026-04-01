@@ -1157,8 +1157,8 @@ export class AvailableSlotsService {
       throw new TRPCError({ code: "NOT_FOUND" });
     }
 
-    // Use "slots" mode to enable cache when available for getting calendar availability
-    const mode: CalendarFetchMode = "slots";
+    // Use non-cached calendar fetch mode for slot calculations to avoid stale busy-time data.
+    const mode: CalendarFetchMode = "none";
     if (isEventTypeLoggingEnabled({ eventTypeId: eventType.id })) {
       logger.settings.minLevel = 2;
     }
