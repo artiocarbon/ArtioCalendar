@@ -423,20 +423,27 @@ export class UserAvailabilityService {
       user,
     });
 
-    const defaultUserScheduleAvailability =
-      user.schedules.find((userSchedule) => userSchedule.id === user.defaultScheduleId)?.availability?.length
-        ? user.schedules.find((userSchedule) => userSchedule.id === user.defaultScheduleId)?.availability
-        : null;
+    const defaultUserScheduleAvailability = user.schedules.find(
+      (userSchedule) => userSchedule.id === user.defaultScheduleId
+    )?.availability?.length
+      ? user.schedules.find((userSchedule) => userSchedule.id === user.defaultScheduleId)?.availability
+      : null;
     const scheduleAvailability = schedule?.availability?.length ? schedule.availability : null;
     const eventTypeAvailability = eventType?.availability?.length ? eventType.availability : null;
     const userAvailability = user.availability?.length ? user.availability : null;
 
-    if (!(scheduleAvailability || eventTypeAvailability || defaultUserScheduleAvailability || userAvailability)) {
+    if (
+      !(scheduleAvailability || eventTypeAvailability || defaultUserScheduleAvailability || userAvailability)
+    ) {
       throw new HttpError({ statusCode: 400, message: ErrorCode.AvailabilityNotFoundInSchedule });
     }
 
     const availabilityToUse =
-      scheduleAvailability || eventTypeAvailability || defaultUserScheduleAvailability || userAvailability || [];
+      scheduleAvailability ||
+      eventTypeAvailability ||
+      defaultUserScheduleAvailability ||
+      userAvailability ||
+      [];
 
     const availability = availabilityToUse.map((a) => ({
       ...a,
@@ -630,13 +637,11 @@ export class UserAvailabilityService {
     } catch (error) {
       log.error(`Error fetching busy times for user ${username}:`, error);
       if (!silentlyHandleCalendarFailures) {
-        throw new CalendarBusyTimesFetchError({
-          message: `Failed to fetch calendar busy-times for user ${username}`,
-          selectedCalendarIds: selectedCalendars.map((calendar) => calendar.externalId),
-          userId: user.id,
-        });
+        log.error(
+          "Degrading to Cal.com bookings only for availability; external calendar or busy-times pipeline failed",
+          { userId: user.id, username }
+        );
       }
-      // Keep debug mode behavior deterministic when caller opts into silent failures.
       busyTimes =
         initialData?.currentBookings
           ?.filter((booking) => booking.uid !== initialData?.rescheduleUid)

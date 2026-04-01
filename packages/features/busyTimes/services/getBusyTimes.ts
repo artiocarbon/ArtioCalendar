@@ -236,90 +236,97 @@ export class BusyTimesService {
     performance.mark("prismaBookingGetEnd");
     performance.measure(`prisma booking get took $1'`, "prismaBookingGetStart", "prismaBookingGetEnd");
     if (credentials?.length > 0 && !bypassBusyCalendarTimes) {
-      const startConnectedCalendarsGet = performance.now();
+      try {
+        const startConnectedCalendarsGet = performance.now();
 
-      const calendarBusyTimesQuery = await getBusyCalendarTimes(
-        credentials,
-        startTime,
-        endTime,
-        selectedCalendars,
-        mode
-      );
-
-      if (!calendarBusyTimesQuery.success) {
-        if (silentlyHandleCalendarFailures) {
-          logger.warn(
-            `Calendar busy times fetch failed but handling silently due to silentlyHandleCalendarFailures flag for user ${username}`,
-            {
-              selectedCalendarIds: selectedCalendars.map((calendar) => calendar.id),
-            }
-          );
-        } else {
-          logger.error(
-            `Calendar busy times fetch failed; continuing with Cal.com bookings only for user ${username}`,
-            {
-              selectedCalendarIds: selectedCalendars.map((calendar) => calendar.id),
-            }
-          );
-        }
-      } else {
-        const calendarBusyTimes = calendarBusyTimesQuery.data;
-        const endConnectedCalendarsGet = performance.now();
-        logger.debug(
-          `Connected Calendars get took ${
-            endConnectedCalendarsGet - startConnectedCalendarsGet
-          } ms for user ${username}`,
-          JSON.stringify({
-            eventTypeId,
-            startTimeDate,
-            endTimeDate,
-            calendarBusyTimes,
-          })
+        const calendarBusyTimesQuery = await getBusyCalendarTimes(
+          credentials,
+          startTime,
+          endTime,
+          selectedCalendars,
+          mode
         );
 
-        const openSeatsDateRanges = Object.keys(bookingSeatCountMap).map((key) => {
-          const [start, end] = key.split("<>");
-          return {
-            start: dayjs(start),
-            end: dayjs(end),
-          };
-        });
-
-        if (rescheduleUid) {
-          const originalRescheduleBooking = bookings.find((booking) => booking.uid === rescheduleUid);
-          if (originalRescheduleBooking) {
-            openSeatsDateRanges.push({
-              start: dayjs(originalRescheduleBooking.startTime),
-              end: dayjs(originalRescheduleBooking.endTime),
-            });
+        if (!calendarBusyTimesQuery.success) {
+          if (silentlyHandleCalendarFailures) {
+            logger.warn(
+              `Calendar busy times fetch failed but handling silently due to silentlyHandleCalendarFailures flag for user ${username}`,
+              {
+                selectedCalendarIds: selectedCalendars.map((calendar) => calendar.id),
+              }
+            );
+          } else {
+            logger.error(
+              `Calendar busy times fetch failed; continuing with Cal.com bookings only for user ${username}`,
+              {
+                selectedCalendarIds: selectedCalendars.map((calendar) => calendar.id),
+              }
+            );
           }
+        } else {
+          const calendarBusyTimes = calendarBusyTimesQuery.data;
+          const endConnectedCalendarsGet = performance.now();
+          logger.debug(
+            `Connected Calendars get took ${
+              endConnectedCalendarsGet - startConnectedCalendarsGet
+            } ms for user ${username}`,
+            JSON.stringify({
+              eventTypeId,
+              startTimeDate,
+              endTimeDate,
+              calendarBusyTimes,
+            })
+          );
+
+          const openSeatsDateRanges = Object.keys(bookingSeatCountMap).map((key) => {
+            const [start, end] = key.split("<>");
+            return {
+              start: dayjs(start),
+              end: dayjs(end),
+            };
+          });
+
+          if (rescheduleUid) {
+            const originalRescheduleBooking = bookings.find((booking) => booking.uid === rescheduleUid);
+            if (originalRescheduleBooking) {
+              openSeatsDateRanges.push({
+                start: dayjs(originalRescheduleBooking.startTime),
+                end: dayjs(originalRescheduleBooking.endTime),
+              });
+            }
+          }
+
+          const result = subtract(
+            calendarBusyTimes.map((value) => ({
+              ...value,
+              end: dayjs(value.end),
+              start: dayjs(value.start),
+              source: value.source ?? "busy_time.calendar",
+            })),
+            openSeatsDateRanges
+          );
+
+          busyTimes.push(
+            ...result.map((busyTime) => ({
+              ...busyTime,
+              start: busyTime.start.subtract(afterEventBuffer || 0, "minute").toDate(),
+              end: busyTime.end.add(beforeEventBuffer || 0, "minute").toDate(),
+            }))
+          );
         }
 
-        const result = subtract(
-          calendarBusyTimes.map((value) => ({
-            ...value,
-            end: dayjs(value.end),
-            start: dayjs(value.start),
-            source: value.source ?? "busy_time.calendar",
-          })),
-          openSeatsDateRanges
-        );
-
-        busyTimes.push(
-          ...result.map((busyTime) => ({
-            ...busyTime,
-            start: busyTime.start.subtract(afterEventBuffer || 0, "minute").toDate(),
-            end: busyTime.end.add(beforeEventBuffer || 0, "minute").toDate(),
-          }))
-        );
-      }
-
-      /*
+        /*
     // TODO: Disabled until we can filter Zoom events by date. Also this is adding too much latency.
     const videoBusyTimes = (await getBusyVideoTimes(credentials)).filter(notEmpty);
     console.log("videoBusyTimes", videoBusyTimes);
     busyTimes.push(...videoBusyTimes);
     */
+      } catch (error) {
+        logger.error(
+          `Calendar busy times processing failed; using Cal.com bookings only for user ${username}`,
+          error instanceof Error ? { message: error.message, name: error.name } : { error: String(error) }
+        );
+      }
     } else {
       logger.warn(`No credentials found for user ${userId}`, {
         selectedCalendarIds: selectedCalendars.map((calendar) => calendar.id),
