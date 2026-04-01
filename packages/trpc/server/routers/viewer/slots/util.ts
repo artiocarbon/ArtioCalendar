@@ -182,10 +182,21 @@ export class AvailableSlotsService {
 
     const userRepo = this.dependencies.userRepo;
     const normalizedUsernameList = this.normalizeUsernameList(input.usernameList);
-    const usersForDynamicEventType = await userRepo.findManyUsersForDynamicEventType({
+    let usersForDynamicEventType = await userRepo.findManyUsersForDynamicEventType({
       currentOrgDomain: isValidOrgDomain ? currentOrgDomain : null,
       usernameList: normalizedUsernameList,
     });
+
+    if (!usersForDynamicEventType.length && isValidOrgDomain) {
+      usersForDynamicEventType = await userRepo.findManyUsersForDynamicEventType({
+        currentOrgDomain: null,
+        usernameList: normalizedUsernameList,
+      });
+    }
+
+    if (!usersForDynamicEventType.length) {
+      throw new TRPCError({ code: "NOT_FOUND" });
+    }
 
     const usersWithOldSelectedCalendars = usersForDynamicEventType.map((user) => withSelectedCalendars(user));
 
