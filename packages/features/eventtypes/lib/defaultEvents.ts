@@ -70,7 +70,7 @@ const commons = {
   slotInterval: null,
   offsetStart: 0,
   locations: [
-    { type: "integrations:google:meet", credentialId: 2 },
+    { type: "integrations:google:meet" },
     { type: "attendeeInPerson", customLabel: "Suggest a Location" },
     { type: "inPerson", address: "Lloyds of London", displayLocationPublicly: true },
   ],

@@ -380,6 +380,9 @@ export class AvailableSlotsService {
         slug,
         organizationDetails ?? { currentOrgDomain: null, isValidOrgDomain: false }
       );
+      if (!userId) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
     }
     const eventTypeRepo = this.dependencies.eventTypeRepo;
     const eventType = await eventTypeRepo.findFirstEventTypeId({ slug: eventTypeSlug, teamId, userId });
