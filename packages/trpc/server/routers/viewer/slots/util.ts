@@ -1680,6 +1680,17 @@ export class AvailableSlotsService {
             hostsAfterSegmentMatching: allHosts.map((host) => ({
               userId: host.user.id,
             })),
+            hostAvailabilityDiagnostics: allUsersAvailability.map((availability) => ({
+              userId: availability.user.id,
+              username: availability.user.username,
+              dateRangeCount: availability.dateRanges.length,
+              busyCount: availability.busy.length,
+              oooDateCount: availability.datesOutOfOffice
+                ? Object.keys(availability.datesOutOfOffice).length
+                : 0,
+              firstDateRangeStart: availability.dateRanges[0]?.start?.toISOString() ?? null,
+              firstDateRangeEnd: availability.dateRanges[0]?.end?.toISOString() ?? null,
+            })),
           },
         }
       : null;
