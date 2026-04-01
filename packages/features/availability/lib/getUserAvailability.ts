@@ -585,7 +585,7 @@ export class UserAvailabilityService {
       );
     }
 
-    let busyTimes = [];
+    let busyTimes: EventBusyDetails[] = [];
     try {
       const busyTimesService = getBusyTimesService();
       busyTimes = await busyTimesService.getBusyTimes({
