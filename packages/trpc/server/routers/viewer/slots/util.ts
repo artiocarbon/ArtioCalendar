@@ -61,7 +61,6 @@ import type { OrgMembershipLookup } from "@calcom/features/di/modules/OrgMembers
 import type { IGetAvailableSlots } from "@calcom/features/bookings/Booker/hooks/useAvailableTimeSlots";
 
 const log = logger.getSubLogger({ prefix: ["[slots/util]"] });
-const DEFAULT_SLOTS_CACHE_TTL = 2000;
 
 type GetAvailabilityUserWithDelegationCredentials = Omit<NonNullable<GetAvailabilityUser>, "credentials"> & {
   credentials: CredentialForCalendarService[];
@@ -91,41 +90,11 @@ export interface IAvailableSlotsService {
 }
 
 function withSlotsCache(
-  redisClient: IRedisService,
+  _redisClient: IRedisService,
   func: (args: GetScheduleOptions) => Promise<IGetAvailableSlots>
 ) {
   return async (args: GetScheduleOptions): Promise<IGetAvailableSlots> => {
-    const cacheKey = `${JSON.stringify(args.input)}`;
-    let success = false;
-    let cachedResult: IGetAvailableSlots | null = null;
-    const startTime = process.hrtime();
-    try {
-      cachedResult = await redisClient.get(cacheKey);
-      success = true;
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === "TimeoutError") {
-        const endTime = process.hrtime(startTime);
-        log.error(`Redis request timed out after ${endTime[0]}${endTime[1] / 1e6}ms`);
-      } else {
-        throw err;
-      }
-    }
-
-    if (!success) {
-      // If the cache request fails, we proceed to call the function directly
-      return await func(args);
-    }
-    if (cachedResult) {
-      log.info("[CACHE HIT] Available slots", { cacheKey });
-      return cachedResult;
-    }
-    const result = await func(args);
-    const ttl = parseInt(process.env.SLOTS_CACHE_TTL ?? "", 10) || DEFAULT_SLOTS_CACHE_TTL;
-    // we do not wait for the cache to complete setting; we fire and forget, and hope it'll finish.
-    // this is to already start responding to the client.
-    redisClient.set(cacheKey, result, { ttl });
-    log.info("[CACHE MISS] Available slots", { cacheKey, ttl });
-    return result;
+    return await func(args);
   };
 }
 
