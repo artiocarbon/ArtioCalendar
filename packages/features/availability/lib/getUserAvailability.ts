@@ -105,6 +105,26 @@ type GetUsersAvailabilityProps = {
   initialData?: Omit<GetUserAvailabilityInitialData, "user">;
 };
 
+export class CalendarBusyTimesFetchError extends Error {
+  readonly selectedCalendarIds: string[];
+  readonly userId: number;
+
+  constructor({
+    message,
+    selectedCalendarIds,
+    userId,
+  }: {
+    message: string;
+    selectedCalendarIds: string[];
+    userId: number;
+  }) {
+    super(message);
+    this.name = "CalendarBusyTimesFetchError";
+    this.selectedCalendarIds = selectedCalendarIds;
+    this.userId = userId;
+  }
+}
+
 export type EventType = Awaited<ReturnType<(typeof UserAvailabilityService)["prototype"]["_getEventType"]>>;
 
 export type GetUserAvailabilityInitialData = {
@@ -609,7 +629,14 @@ export class UserAvailabilityService {
       });
     } catch (error) {
       log.error(`Error fetching busy times for user ${username}:`, error);
-      // Preserve internal booking conflicts even if external calendar busy-time fetch fails.
+      if (!silentlyHandleCalendarFailures) {
+        throw new CalendarBusyTimesFetchError({
+          message: `Failed to fetch calendar busy-times for user ${username}`,
+          selectedCalendarIds: selectedCalendars.map((calendar) => calendar.externalId),
+          userId: user.id,
+        });
+      }
+      // Keep debug mode behavior deterministic when caller opts into silent failures.
       busyTimes =
         initialData?.currentBookings
           ?.filter((booking) => booking.uid !== initialData?.rescheduleUid)

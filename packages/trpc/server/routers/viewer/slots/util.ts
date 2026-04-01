@@ -3,6 +3,7 @@ import type { Dayjs } from "@calcom/dayjs";
 import dayjs from "@calcom/dayjs";
 import { orgDomainConfig } from "@calcom/ee/organizations/lib/orgDomains";
 import { getAggregatedAvailability } from "@calcom/features/availability/lib/getAggregatedAvailability/getAggregatedAvailability";
+import { CalendarBusyTimesFetchError } from "@calcom/features/availability/lib/getUserAvailability";
 import type {
   CurrentSeats,
   EventType,
@@ -1012,6 +1013,7 @@ export class AvailableSlotsService {
         beforeEventBuffer: eventType.beforeEventBuffer,
         duration: input.duration || 0,
         returnDateOverrides: false,
+        withSource: input._enableTroubleshooter ?? false,
         bypassBusyCalendarTimes,
         silentlyHandleCalendarFailures: silentCalendarFailures,
         mode,
@@ -1254,8 +1256,26 @@ export class AvailableSlotsService {
     const hasFallbackRRHosts =
       eligibleFallbackRRHosts.length > 0 && eligibleFallbackRRHosts.length > eligibleQualifiedRRHosts.length;
 
+    const calculateHostsAndAvailabilitiesSafely = async (
+      params: Parameters<(typeof AvailableSlotsService)["prototype"]["calculateHostsAndAvailabilities"]>[0]
+    ) => {
+      try {
+        return await this.calculateHostsAndAvailabilities(params);
+      } catch (error) {
+        if (error instanceof CalendarBusyTimesFetchError) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Calendar availability is temporarily unavailable for calendars: ${error.selectedCalendarIds.join(
+              ", "
+            )}. Please try again in a moment.`,
+          });
+        }
+        throw error;
+      }
+    };
+
     let { allUsersAvailability, usersWithCredentials, currentSeats } =
-      await this.calculateHostsAndAvailabilities({
+      await calculateHostsAndAvailabilitiesSafely({
         input,
         eventType,
         hosts: allHosts,
@@ -1290,7 +1310,7 @@ export class AvailableSlotsService {
         // if start time is not within first two weeks, check if there are any available slots
         if (!aggregatedAvailability.length) {
           // if no available slots check if first two weeks are available, otherwise fallback
-          const firstTwoWeeksAvailabilities = await this.calculateHostsAndAvailabilities({
+          const firstTwoWeeksAvailabilities = await calculateHostsAndAvailabilitiesSafely({
             input,
             eventType,
             hosts: [...eligibleQualifiedRRHosts, ...eligibleFixedHosts],
@@ -1326,7 +1346,7 @@ export class AvailableSlotsService {
       if (diff > 0) {
         // if the first available slot is more than 2 weeks from now, round robin as normal
         ({ allUsersAvailability, usersWithCredentials, currentSeats } =
-          await this.calculateHostsAndAvailabilities({
+          await calculateHostsAndAvailabilitiesSafely({
             input,
             eventType,
             hosts: [...eligibleFallbackRRHosts, ...eligibleFixedHosts],
@@ -1667,6 +1687,7 @@ export class AvailableSlotsService {
     const troubleshooterData = enableTroubleshooter
       ? {
           troubleshooter: {
+            calendarBusyFetchStatus: "ok",
             routedTeamMemberIds: routedTeamMemberIds,
             // One that Salesforce asked for
             askedContactOwner: contactOwnerEmailFromInput,
@@ -1682,6 +1703,17 @@ export class AvailableSlotsService {
               userId: host.user.id,
             })),
             hostAvailabilityDiagnostics: allUsersAvailability.map((availability) => ({
+              selectedCalendarsUsed: (
+                eventType?.useEventLevelSelectedCalendars
+                  ? availability.user.allSelectedCalendars.filter(
+                      (calendar) => calendar.eventTypeId === eventType.id
+                    )
+                  : availability.user.userLevelSelectedCalendars
+              ).map((calendar) => ({
+                externalId: calendar.externalId,
+                integration: calendar.integration,
+                eventTypeId: calendar.eventTypeId,
+              })),
               userId: availability.user.id,
               username: availability.user.username,
               dateRangeCount: availability.dateRanges.length,
@@ -1691,6 +1723,17 @@ export class AvailableSlotsService {
                 : 0,
               firstDateRangeStart: availability.dateRanges[0]?.start?.toISOString() ?? null,
               firstDateRangeEnd: availability.dateRanges[0]?.end?.toISOString() ?? null,
+              busyPreview: availability.busy.slice(0, 10).map((busy) => ({
+                start: dayjs(busy.start).toISOString(),
+                end: dayjs(busy.end).toISOString(),
+                title: busy.title,
+                source: "source" in busy ? busy.source ?? null : null,
+              })),
+              busySourceSummary: availability.busy.reduce<Record<string, number>>((acc, busy) => {
+                const source = "source" in busy && busy.source ? busy.source : "unknown";
+                acc[source] = (acc[source] ?? 0) + 1;
+                return acc;
+              }, {}),
               inputDiagnostics: {
                 defaultScheduleId: availability.user.defaultScheduleId ?? null,
                 userAvailabilityCount: availability.user.availability?.length ?? 0,
