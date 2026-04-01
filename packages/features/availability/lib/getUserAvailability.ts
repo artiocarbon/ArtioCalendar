@@ -609,9 +609,16 @@ export class UserAvailabilityService {
       });
     } catch (error) {
       log.error(`Error fetching busy times for user ${username}:`, error);
-      // Fail open on busy-time provider errors so valid working-hours availability
-      // does not collapse to an empty month.
-      busyTimes = [];
+      // Preserve internal booking conflicts even if external calendar busy-time fetch fails.
+      busyTimes =
+        initialData?.currentBookings
+          ?.filter((booking) => booking.uid !== initialData?.rescheduleUid)
+          .map((booking) => ({
+            start: dayjs(booking.startTime).toDate(),
+            end: dayjs(booking.endTime).toDate(),
+            title: booking.title,
+            source: `booking-${booking.id}`,
+          })) ?? [];
     }
 
     const detailedBusyTimesWithSource: EventBusyDetails[] = [
