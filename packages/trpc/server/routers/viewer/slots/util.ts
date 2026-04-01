@@ -1157,8 +1157,9 @@ export class AvailableSlotsService {
       throw new TRPCError({ code: "NOT_FOUND" });
     }
 
-    // Use non-cached calendar fetch mode for slot calculations to avoid stale busy-time data.
-    const mode: CalendarFetchMode = "none";
+    // Use a mode that still fetches calendar busy-times (OOO/conflicts) while avoiding
+    // the dedicated "slots" cache path.
+    const mode: CalendarFetchMode = "overlay";
     if (isEventTypeLoggingEnabled({ eventTypeId: eventType.id })) {
       logger.settings.minLevel = 2;
     }
