@@ -96,6 +96,31 @@ export function detectEventTypeScheduleForUser({
 
   const schedule = potentialSchedule ?? fallbackSchedule;
 
+  // #region agent log
+  if (typeof fetch !== "undefined") {
+    fetch("http://127.0.0.1:7715/ingest/7541c8ae-e311-4e02-85d2-d26f0daedc69", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "b4623e" },
+      body: JSON.stringify({
+        sessionId: "b4623e",
+        hypothesisId: "E4",
+        location: "detectEventTypeScheduleForUser.ts:schedule_selected",
+        message: "schedule_detection",
+        data: {
+          userId: user.id,
+          userDefaultScheduleId: user.defaultScheduleId,
+          userScheduleId: userSchedule?.id ?? null,
+          userScheduleAvailCount: userSchedule?.availability?.length ?? 0,
+          selectedScheduleId: schedule?.id,
+          selectedAvailCount: schedule?.availability?.length ?? 0,
+          usedFallback: !potentialSchedule,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+  }
+  // #endregion
+
   const isDefaultSchedule = !!(userSchedule && userSchedule.id === schedule?.id);
 
   const isTimezoneSet = Boolean(potentialSchedule && potentialSchedule.timeZone !== null);
