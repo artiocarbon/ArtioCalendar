@@ -649,6 +649,72 @@ class GoogleCalendarService implements Calendar {
     dateFrom: string,
     dateTo: string
   ): Promise<EventBusyDate[]> {
+    const dedupeBusySlots = (busySlots: EventBusyDate[]) => {
+      const seen = new Set<string>();
+      return busySlots.filter((slot) => {
+        const key = `${slot.start}__${slot.end}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    };
+
+    const mergeBusySlots = (primary: EventBusyDate[], fallback: EventBusyDate[]) =>
+      dedupeBusySlots([...primary, ...fallback]);
+
+    const normalizeDateToIso = (dateString: string) => `${dateString}T00:00:00.000Z`;
+
+    const fetchBusyEventsFromEventsApi = async (
+      targetCalendarIds: string[],
+      timeMin: string,
+      timeMax: string
+    ): Promise<EventBusyDate[]> => {
+      const calendar = await this.authedCalendar();
+      const allCalendarEvents = await Promise.all(
+        targetCalendarIds.map(async (calendarId) => {
+          const busyEvents: EventBusyDate[] = [];
+          let pageToken: string | undefined;
+
+          do {
+            const response = await calendar.events.list({
+              calendarId,
+              timeMin,
+              timeMax,
+              singleEvents: true,
+              showDeleted: false,
+              maxResults: 2500,
+              pageToken,
+              fields: "items(status,transparency,eventType,start,end),nextPageToken",
+            });
+
+            const events = response.data.items ?? [];
+            for (const event of events) {
+              if (event.status === "cancelled") continue;
+
+              const isOutOfOffice = event.eventType === "outOfOffice";
+              const isBusyByTransparency = event.transparency !== "transparent";
+              if (!isOutOfOffice && !isBusyByTransparency) continue;
+
+              const start =
+                event.start?.dateTime || (event.start?.date ? normalizeDateToIso(event.start.date) : null);
+              const end = event.end?.dateTime || (event.end?.date ? normalizeDateToIso(event.end.date) : null);
+
+              if (!start || !end) continue;
+              if (new Date(start) >= new Date(end)) continue;
+
+              busyEvents.push({ start, end });
+            }
+
+            pageToken = response.data.nextPageToken ?? undefined;
+          } while (pageToken);
+
+          return busyEvents;
+        })
+      );
+
+      return allCalendarEvents.flat();
+    };
+
     // More efficient date difference calculation using native Date objects
     // Use Math.floor to match dayjs diff behavior (truncates, doesn't round up)
     const fromDate = new Date(dateFrom);
@@ -665,7 +731,9 @@ class GoogleCalendarService implements Calendar {
       });
 
       if (!freeBusyData) throw new Error("No response from google calendar");
-      return freeBusyData.map((freeBusy) => ({ start: freeBusy.start, end: freeBusy.end }));
+      const freeBusySlots = freeBusyData.map((freeBusy) => ({ start: freeBusy.start, end: freeBusy.end }));
+      const eventsApiBusySlots = await fetchBusyEventsFromEventsApi(calendarIds, dateFrom, dateTo);
+      return mergeBusySlots(freeBusySlots, eventsApiBusySlots);
     }
 
     // Handle longer periods by chunking into 90-day periods
@@ -694,10 +762,17 @@ class GoogleCalendarService implements Calendar {
         busyData.push(...chunkData.map((freeBusy) => ({ start: freeBusy.start, end: freeBusy.end })));
       }
 
+      const eventsApiBusySlots = await fetchBusyEventsFromEventsApi(
+        calendarIds,
+        new Date(currentStartTime).toISOString(),
+        new Date(currentEndTime).toISOString()
+      );
+      busyData.push(...eventsApiBusySlots);
+
       currentStartTime = currentEndTime + oneMinuteMs;
     }
 
-    return busyData;
+    return dedupeBusySlots(busyData);
   }
 
   async getAvailability(params: GetAvailabilityParams): Promise<EventBusyDate[]> {
