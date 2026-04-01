@@ -255,10 +255,11 @@ export class BusyTimesService {
             }
           );
         } else {
-          throw new Error(
-            `Failed to fetch busy calendar times for selected calendars ${selectedCalendars.map(
-              (calendar) => calendar.id
-            )}`
+          logger.error(
+            `Calendar busy times fetch failed; continuing with Cal.com bookings only for user ${username}`,
+            {
+              selectedCalendarIds: selectedCalendars.map((calendar) => calendar.id),
+            }
           );
         }
       } else {

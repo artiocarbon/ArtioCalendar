@@ -70,19 +70,31 @@ export const getCalendarsEventsWithTimezones = async (
       log.info("Allowing getAvailability even without any selected calendars for Delegation Credential");
     }
     /** We extract external Ids so we don't cache too much */
-    const eventBusyDates =
-      (await c.getAvailabilityWithTimeZones?.({
-        dateFrom,
-        dateTo,
-        selectedCalendars: passedSelectedCalendars,
-        mode: "slots",
-        fallbackToPrimary: allowFallbackToPrimary,
-      })) || [];
+    try {
+      const eventBusyDates =
+        (await c.getAvailabilityWithTimeZones?.({
+          dateFrom,
+          dateTo,
+          selectedCalendars: passedSelectedCalendars,
+          mode: "slots",
+          fallbackToPrimary: allowFallbackToPrimary,
+        })) || [];
 
-    return eventBusyDates.map((event) => ({
-      ...event,
-      timeZone: normalizeTimezone(event.timeZone),
-    }));
+      return eventBusyDates.map((event) => ({
+        ...event,
+        timeZone: normalizeTimezone(event.timeZone),
+      }));
+    } catch (error) {
+      log.error(
+        "getAvailabilityWithTimeZones failed; skipping external busy times for this credential",
+        safeStringify({
+          error,
+          credentialId: credential?.id,
+          selectedCalendarExternalIds: passedSelectedCalendars.map((sc) => sc.externalId),
+        })
+      );
+      return [];
+    }
   });
   const awaitedResults = await Promise.all(results);
   return awaitedResults;
@@ -181,24 +193,37 @@ const getCalendarsEvents = async (
         selectedCalendars: passedSelectedCalendars.map(getPiiFreeSelectedCalendar),
       })
     );
-    const eventBusyDates = await calendarService.getAvailability({
-      dateFrom,
-      dateTo,
-      selectedCalendars: passedSelectedCalendars,
-      mode,
-      fallbackToPrimary: allowFallbackToPrimary,
-    });
-    performance.mark("eventBusyDatesEnd");
-    performance.measure(
-      `[getAvailability for ${selectedCalendarIds.join(", ")}][$1]'`,
-      "eventBusyDatesStart",
-      "eventBusyDatesEnd"
-    );
+    try {
+      const eventBusyDates = await calendarService.getAvailability({
+        dateFrom,
+        dateTo,
+        selectedCalendars: passedSelectedCalendars,
+        mode,
+        fallbackToPrimary: allowFallbackToPrimary,
+      });
+      performance.mark("eventBusyDatesEnd");
+      performance.measure(
+        `[getAvailability for ${selectedCalendarIds.join(", ")}][$1]'`,
+        "eventBusyDatesStart",
+        "eventBusyDatesEnd"
+      );
 
-    return eventBusyDates.map((a) => ({
-      ...a,
-      source: `${appId}`,
-    }));
+      return eventBusyDates.map((a) => ({
+        ...a,
+        source: `${appId}`,
+      }));
+    } catch (error) {
+      performance.mark("eventBusyDatesEnd");
+      log.error(
+        "getAvailability failed; skipping external busy times for this credential",
+        safeStringify({
+          error,
+          credentialId: credential?.id,
+          selectedCalendarExternalIds: passedSelectedCalendars.map((sc) => sc.externalId),
+        })
+      );
+      return [];
+    }
   });
   const awaitedResults = await Promise.all(results);
   performance.mark("getBusyCalendarTimesEnd");
