@@ -177,8 +177,8 @@ export const BookingFields = ({
           hidden = isDynamicGroupBooking ? true : !!field.hidden;
         }
 
-        // We don't show `notes` field during reschedule but since it's a query param we better valid if rescheduleUid brought any bookingData
-        if (field.name === SystemField.Enum.notes && bookingData !== null) {
+        // Hide additional notes for dynamic group links and during reschedule.
+        if (field.name === SystemField.Enum.notes && (isDynamicGroupBooking || bookingData !== null)) {
           return null;
         }
 

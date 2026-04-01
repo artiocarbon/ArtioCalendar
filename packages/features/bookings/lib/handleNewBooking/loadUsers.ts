@@ -96,10 +96,19 @@ const loadDynamicUsers = async (dynamicUserList: string[], currentOrgDomain: str
     throw new Error("dynamicUserList is not properly defined or empty.");
   }
 
-  const users = await findUsersByUsername({
+  let users = await findUsersByUsername({
     usernameList: dynamicUserList,
     orgSlug: currentOrgDomain ? currentOrgDomain : null,
   });
+
+  // In single-org/root-domain setups, dynamic participants can be personal users.
+  // Retry in personal context when org-scoped lookup misses.
+  if (!users.length && currentOrgDomain) {
+    users = await findUsersByUsername({
+      usernameList: dynamicUserList,
+      orgSlug: null,
+    });
+  }
 
   // For dynamic group bookings: reorder users to match dynamicUserList order
   // to ensure the first user in the URL is the organizer/host
