@@ -1690,6 +1690,18 @@ export class AvailableSlotsService {
                 : 0,
               firstDateRangeStart: availability.dateRanges[0]?.start?.toISOString() ?? null,
               firstDateRangeEnd: availability.dateRanges[0]?.end?.toISOString() ?? null,
+              inputDiagnostics: {
+                defaultScheduleId: availability.user.defaultScheduleId ?? null,
+                userAvailabilityCount: availability.user.availability?.length ?? 0,
+                userScheduleCount: availability.user.schedules?.length ?? 0,
+                defaultScheduleAvailabilityCount:
+                  availability.user.schedules?.find(
+                    (schedule) => schedule.id === availability.user.defaultScheduleId
+                  )?.availability?.length ?? 0,
+                firstScheduleId: availability.user.schedules?.[0]?.id ?? null,
+                firstScheduleAvailabilityCount: availability.user.schedules?.[0]?.availability?.length ?? 0,
+                firstScheduleDaysSample: availability.user.schedules?.[0]?.availability?.[0]?.days ?? null,
+              },
             })),
           },
         }
