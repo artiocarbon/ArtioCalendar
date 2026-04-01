@@ -134,7 +134,8 @@ export class BusyTimesService {
 
       const minutesToBlockBeforeEvent = (eventType?.beforeEventBuffer || 0) + (afterEventBuffer || 0);
       const minutesToBlockAfterEvent = (eventType?.afterEventBuffer || 0) + (beforeEventBuffer || 0);
-      const locations = (eventType as { locations?: unknown }).locations;
+      const locations =
+        eventType != null ? (eventType as { locations?: unknown }).locations : undefined;
       const isInPersonMeeting =
         Array.isArray(locations) &&
         locations.some(
