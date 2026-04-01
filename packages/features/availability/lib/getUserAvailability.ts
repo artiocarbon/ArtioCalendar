@@ -609,16 +609,9 @@ export class UserAvailabilityService {
       });
     } catch (error) {
       log.error(`Error fetching busy times for user ${username}:`, error);
-      return {
-        busy: [],
-        timeZone: finalTimezone,
-        dateRanges: [],
-        oooExcludedDateRanges: [],
-        workingHours: [],
-        dateOverrides: [],
-        currentSeats: [],
-        datesOutOfOffice: undefined,
-      };
+      // Fail open on busy-time provider errors so valid working-hours availability
+      // does not collapse to an empty month.
+      busyTimes = [];
     }
 
     const detailedBusyTimesWithSource: EventBusyDetails[] = [
