@@ -1,4 +1,4 @@
-import { WEBAPP_URL } from "@calcom/lib/constants";
+import { LOGO_ICON, WEBAPP_URL } from "@calcom/lib/constants";
 
 import RawHtml from "./RawHtml";
 import Row from "./Row";
@@ -6,7 +6,7 @@ import Row from "./Row";
 const CommentIE = ({ html = "" }) => <RawHtml html={`<!--[if mso | IE]>${html}<![endif]-->`} />;
 
 const EmailBodyLogo = () => {
-  const image = `${WEBAPP_URL}/artio-logo.svg`;
+  const image = `${WEBAPP_URL}${LOGO_ICON}`;
 
   return (
     <>

@@ -47,7 +47,6 @@ import { AssignmentReasonEnum, BookingStatus, SchedulingType } from "@calcom/pri
 import assignmentReasonBadgeTitleMap from "@calcom/web/lib/booking/assignmentReasonBadgeTitleMap";
 import { bookingMetadataSchema } from "@calcom/prisma/zod-utils";
 import { trpc } from "@calcom/trpc/react";
-import { Alert } from "@calcom/ui/components/alert";
 import { Avatar } from "@calcom/ui/components/avatar";
 import { Badge } from "@calcom/ui/components/badge";
 import { Button } from "@calcom/ui/components/button";
@@ -164,10 +163,6 @@ export default function Success(props: PageProps) {
   const isPaymentSucceededFromRedirect = redirect_status === "succeeded";
   const isAwaitingPayment =
     props.paymentStatus && !props.paymentStatus.success && !isPaymentSucceededFromRedirect;
-
-  const attendees = bookingInfo?.attendees;
-
-  const isGmail = !!attendees.find((attendee) => attendee?.email?.includes("gmail.com"));
 
   const [is24h, setIs24h] = useState(
     props?.userTimeFormat ? props.userTimeFormat === 24 : isBrowserLocale24h()
@@ -1105,27 +1100,6 @@ export default function Success(props: PageProps) {
                     </>
                   ))}
               </div>
-              {isGmail && !isFeedbackMode && (
-                <Alert
-                  className="main -mb-20 mt-4 inline-block ltr:text-left rtl:text-right sm:-mt-4 sm:mb-4 sm:w-full sm:max-w-xl sm:align-middle"
-                  severity="warning"
-                  message={
-                    <div>
-                      <p className="font-semibold">{t("google_new_spam_policy")}</p>
-                      <span className="underline">
-                        <a
-                          target="_blank"
-                          href="https://cal.com/blog/google-s-new-spam-policy-may-be-affecting-your-invitations"
-                          rel="noreferrer">
-                          {t("resolve")}
-                        </a>
-                      </span>
-                    </div>
-                  }
-                  CustomIcon="circle-alert"
-                  customIconColor="text-attention dark:text-orange-200"
-                />
-              )}
             </div>
           </div>
         </div>

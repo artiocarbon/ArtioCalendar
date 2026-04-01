@@ -14,7 +14,8 @@ self.addEventListener("push", async (event) => {
   }
 
   const title = notificationData.title || "New Artio Calendar Notification";
-  const image = notificationData.icon || "https://artiocarbon.com/artio-logo-gold.png";
+  const image =
+    notificationData.icon || new URL("/artio-logo-gold.png", self.location.origin).href;
 
    event.waitUntil(
     (async () => {
