@@ -348,8 +348,13 @@ export const getPublicEvent = async (
         })) ?? undefined;
     }
 
+    const schedulerName = users[0].name || users[0].username || "Scheduler";
+    const dynamicTitle = `Artio - ${schedulerName}`;
+
     return {
       ...defaultEvent,
+      title: dynamicTitle,
+      eventName: dynamicTitle,
       bookingFields: getBookingFieldsWithSystemFields({ ...defaultEvent, disableBookingTitle }),
       restrictionScheduleId: null,
       useBookerTimezone: false,
