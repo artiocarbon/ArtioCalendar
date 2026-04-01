@@ -403,15 +403,20 @@ export class UserAvailabilityService {
       user,
     });
 
+    const defaultUserScheduleAvailability =
+      user.schedules.find((userSchedule) => userSchedule.id === user.defaultScheduleId)?.availability?.length
+        ? user.schedules.find((userSchedule) => userSchedule.id === user.defaultScheduleId)?.availability
+        : null;
     const scheduleAvailability = schedule?.availability?.length ? schedule.availability : null;
     const eventTypeAvailability = eventType?.availability?.length ? eventType.availability : null;
     const userAvailability = user.availability?.length ? user.availability : null;
 
-    if (!(scheduleAvailability || eventTypeAvailability || userAvailability)) {
+    if (!(scheduleAvailability || eventTypeAvailability || defaultUserScheduleAvailability || userAvailability)) {
       throw new HttpError({ statusCode: 400, message: ErrorCode.AvailabilityNotFoundInSchedule });
     }
 
-    const availabilityToUse = scheduleAvailability || eventTypeAvailability || userAvailability || [];
+    const availabilityToUse =
+      scheduleAvailability || eventTypeAvailability || defaultUserScheduleAvailability || userAvailability || [];
 
     const availability = availabilityToUse.map((a) => ({
       ...a,
