@@ -171,7 +171,7 @@ export const dynamicEvent = {
   descriptionAsSafeHTML: "",
   position: 0,
   ...commons,
-  metadata: eventTypeMetaDataSchemaWithTypedApps.parse({ multipleDuration: [15, 30, 45, 60, 90] }),
+  metadata: eventTypeMetaDataSchemaWithTypedApps.parse({ multipleDuration: [30, 60] }),
 };
 
 export const defaultEvents = [dynamicEvent];

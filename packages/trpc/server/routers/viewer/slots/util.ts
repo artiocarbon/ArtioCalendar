@@ -17,7 +17,7 @@ import type { BookingRepository } from "@calcom/features/bookings/repositories/B
 import type { BusyTimesService } from "@calcom/features/busyTimes/services/getBusyTimes";
 import type { getBusyTimesService } from "@calcom/features/di/containers/BusyTimes";
 import type { TeamRepository } from "@calcom/features/ee/teams/repositories/TeamRepository";
-import { getDefaultEvent } from "@calcom/features/eventtypes/lib/defaultEvents";
+import { getDefaultEvent, getUsernameList } from "@calcom/features/eventtypes/lib/defaultEvents";
 import type { EventTypeRepository } from "@calcom/features/eventtypes/repositories/eventTypeRepository";
 import type { FeaturesRepository } from "@calcom/features/flags/features.repository";
 import type { PrismaOOORepository } from "@calcom/features/ooo/repositories/PrismaOOORepository";
@@ -132,6 +132,11 @@ function withSlotsCache(
 export class AvailableSlotsService {
   constructor(public readonly dependencies: IAvailableSlotsService) {}
 
+  private normalizeUsernameList(usernameList: TGetScheduleInputSchema["usernameList"]) {
+    if (!usernameList?.length) return [];
+    return usernameList.flatMap((username) => getUsernameList(username));
+  }
+
   private async _getReservedSlotsAndCleanupExpired({
     bookerClientUid,
     usersWithCredentials,
@@ -176,13 +181,10 @@ export class AvailableSlotsService {
     const dynamicEventType = getDefaultEvent(input.eventTypeSlug);
 
     const userRepo = this.dependencies.userRepo;
+    const normalizedUsernameList = this.normalizeUsernameList(input.usernameList);
     const usersForDynamicEventType = await userRepo.findManyUsersForDynamicEventType({
       currentOrgDomain: isValidOrgDomain ? currentOrgDomain : null,
-      usernameList: Array.isArray(input.usernameList)
-        ? input.usernameList
-        : input.usernameList
-          ? [input.usernameList]
-          : [],
+      usernameList: normalizedUsernameList,
     });
 
     const usersWithOldSelectedCalendars = usersForDynamicEventType.map((user) => withSelectedCalendars(user));
@@ -1132,10 +1134,12 @@ export class AvailableSlotsService {
     input: TGetScheduleInputSchema,
     organizationDetails: { currentOrgDomain: string | null; isValidOrgDomain: boolean }
   ) {
-    const isDynamicBooking = input.usernameList && input.usernameList.length > 1;
+    const normalizedUsernameList = this.normalizeUsernameList(input.usernameList);
+    const isDynamicBooking = normalizedUsernameList.length > 1;
+    const normalizedInput = { ...input, usernameList: normalizedUsernameList };
     return isDynamicBooking
-      ? await this.getDynamicEventType(input, organizationDetails)
-      : await this.getEventType(input, organizationDetails);
+      ? await this.getDynamicEventType(normalizedInput, organizationDetails)
+      : await this.getEventType(normalizedInput, organizationDetails);
   }
 
   private getRegularOrDynamicEventType = withReporting(

@@ -11,5 +11,6 @@ describe("dynamic default event locations", () => {
       { type: "attendeeInPerson", customLabel: "Suggest a Location" },
       { type: "inPerson", address: "Lloyds of London", displayLocationPublicly: true },
     ]);
+    expect(event.metadata?.multipleDuration).toEqual([30, 60]);
   });
 });
