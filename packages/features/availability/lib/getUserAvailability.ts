@@ -684,27 +684,14 @@ export class UserAvailabilityService {
     const dateRangesInWhichUserIsAvailable = subtract(dateRanges, formattedBusyTimes);
     const dateRangesInWhichUserIsAvailableWithoutOOO = subtract(oooExcludedDateRanges, formattedBusyTimes);
 
-    // #region agent log
-    fetch("http://127.0.0.1:7715/ingest/7541c8ae-e311-4e02-85d2-d26f0daedc69", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "b4623e" },
-      body: JSON.stringify({
-        sessionId: "b4623e",
-        hypothesisId: "E3",
-        location: "getUserAvailability.ts:before_return",
-        message: "availability_result",
-        data: {
-          busyTimesCount: detailedBusyTimes.length,
-          dateRangesCount: dateRangesInWhichUserIsAvailable.length,
-          busyPreview: detailedBusyTimes
-            .slice(0, 3)
-            .map((b) => ({ start: b.start, end: b.end, source: b.source })),
-          username,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
+    console.log("[DEBUG-B4623E] E3: availability_result", {
+      busyTimesCount: detailedBusyTimes.length,
+      dateRangesCount: dateRangesInWhichUserIsAvailable.length,
+      busyPreview: detailedBusyTimes
+        .slice(0, 5)
+        .map((b) => ({ start: b.start, end: b.end, source: b.source })),
+      username,
+    });
 
     const result = {
       busy: detailedBusyTimes,

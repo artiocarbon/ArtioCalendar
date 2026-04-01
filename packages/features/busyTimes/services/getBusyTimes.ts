@@ -226,26 +226,13 @@ export class BusyTimesService {
       return aggregate;
     }, []);
 
-    // #region agent log
-    fetch("http://127.0.0.1:7715/ingest/7541c8ae-e311-4e02-85d2-d26f0daedc69", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "b4623e" },
-      body: JSON.stringify({
-        sessionId: "b4623e",
-        hypothesisId: "E1",
-        location: "getBusyTimes.ts:after_booking_reduce",
-        message: "calcom_bookings_processed",
-        data: {
-          bookingsCount: bookings.length,
-          busyTimesFromBookingsCount: busyTimes.length,
-          startTime,
-          endTime,
-          username,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
+    console.log("[DEBUG-B4623E] E1: calcom_bookings_processed", {
+      bookingsCount: bookings.length,
+      busyTimesFromBookingsCount: busyTimes.length,
+      startTime,
+      endTime,
+      username,
+    });
 
     logger.debug(
       `Busy Time from Cal Bookings ${JSON.stringify({
@@ -267,6 +254,17 @@ export class BusyTimesService {
           selectedCalendars,
           mode
         );
+
+        console.log("[DEBUG-B4623E] B: calendar_query_result", {
+          success: calendarBusyTimesQuery.success,
+          dataLength: calendarBusyTimesQuery.success ? calendarBusyTimesQuery.data.length : null,
+          dataPreview: calendarBusyTimesQuery.success 
+            ? calendarBusyTimesQuery.data.slice(0, 5).map(b => ({ start: b.start, end: b.end, source: b.source }))
+            : null,
+          startTime,
+          endTime,
+          username,
+        });
 
         if (!calendarBusyTimesQuery.success) {
           if (silentlyHandleCalendarFailures) {
@@ -359,28 +357,15 @@ export class BusyTimesService {
         allBusyTimes: busyTimes,
       })
     );
-    // #region agent log
-    fetch("http://127.0.0.1:7715/ingest/7541c8ae-e311-4e02-85d2-d26f0daedc69", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "b4623e" },
-      body: JSON.stringify({
-        sessionId: "b4623e",
-        hypothesisId: "E2",
-        location: "getBusyTimes.ts:return",
-        message: "final_busyTimes_returned",
-        data: {
-          finalBusyTimesCount: busyTimes.length,
-          busyTimesPreview: busyTimes.slice(0, 3).map((b) => ({
-            start: b.start,
-            end: b.end,
-            source: b.source,
-          })),
-          username,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
+    console.log("[DEBUG-B4623E] E2: final_busyTimes_returned", {
+      finalBusyTimesCount: busyTimes.length,
+      busyTimesPreview: busyTimes.slice(0, 5).map((b) => ({
+        start: b.start,
+        end: b.end,
+        source: b.source,
+      })),
+      username,
+    });
     return busyTimes;
   }
 

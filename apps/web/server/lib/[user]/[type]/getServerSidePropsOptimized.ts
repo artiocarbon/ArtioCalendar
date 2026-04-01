@@ -13,6 +13,8 @@ import type { GetServerSidePropsContext } from "next";
 import type { Session } from "next-auth";
 import { z } from "zod";
 
+import { getUsersInOrgContextOptimized } from "../getUsersInOrgContextOptimized";
+
 type Props = {
   eventData: NonNullable<Awaited<ReturnType<typeof EventRepositoryOptimized.getPublicEvent>>>;
   booking?: GetBookingType;
