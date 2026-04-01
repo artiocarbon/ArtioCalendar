@@ -73,6 +73,7 @@ export function detectEventTypeScheduleForUser({
   const userSchedule = user.schedules.find(
     (schedule) => !user?.defaultScheduleId || schedule.id === user?.defaultScheduleId
   );
+  const eventTypeSchedule = eventType?.schedule;
   const hostSchedule = eventType?.hosts?.find((host) => host.user.id === user.id)?.schedule;
 
   // TODO: It uses default timezone of user. Should we use timezone of team ?
@@ -85,8 +86,8 @@ export function detectEventTypeScheduleForUser({
 
   let potentialSchedule = null;
 
-  if (hasAvailability(eventType?.schedule)) {
-    potentialSchedule = eventType.schedule;
+  if (hasAvailability(eventTypeSchedule)) {
+    potentialSchedule = eventTypeSchedule;
   } else if (hasAvailability(hostSchedule)) {
     potentialSchedule = hostSchedule;
   } else if (hasAvailability(userSchedule)) {
