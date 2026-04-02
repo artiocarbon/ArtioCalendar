@@ -963,12 +963,6 @@ async function handler(
 
   //checks what users are available
   if (isFirstSeat) {
-    const selectedLocationType = reqBody.responses?.location?.value;
-    const conditionalTravelBuffers =
-      selectedLocationType === "inPerson" || selectedLocationType === "attendeeInPerson"
-        ? { beforeEventBuffer: 15, afterEventBuffer: 15 }
-        : {};
-
     const eventTypeWithUsers: Omit<getEventTypeResponse, "users"> & {
       users: IsFixedAwareUserWithCredentials[];
     } = {
@@ -1014,7 +1008,6 @@ async function handler(
                   dateTo: dayjs(end).tz(reqBody.timeZone).format(),
                   timeZone: reqBody.timeZone,
                   originalRescheduledBooking: originalRescheduledBooking ?? null,
-                  ...conditionalTravelBuffers,
                 },
                 tracingLogger,
                 calendarFetchMode
@@ -1030,7 +1023,6 @@ async function handler(
                 dateTo: dayjs(end).tz(reqBody.timeZone).format(),
                 timeZone: reqBody.timeZone,
                 originalRescheduledBooking,
-                ...conditionalTravelBuffers,
               },
               tracingLogger,
               calendarFetchMode
@@ -1050,7 +1042,6 @@ async function handler(
               dateTo: dayjs(reqBody.end).tz(reqBody.timeZone).format(),
               timeZone: reqBody.timeZone,
               originalRescheduledBooking,
-              ...conditionalTravelBuffers,
             },
             tracingLogger,
             calendarFetchMode
@@ -1080,7 +1071,6 @@ async function handler(
                 dateTo: dayjs(reqBody.end).tz(reqBody.timeZone).format(),
                 timeZone: reqBody.timeZone,
                 originalRescheduledBooking,
-                ...conditionalTravelBuffers,
               },
               tracingLogger,
               calendarFetchMode
@@ -1194,7 +1184,6 @@ async function handler(
                       dateTo: dayjs(end).tz(reqBody.timeZone).format(),
                       timeZone: reqBody.timeZone,
                       originalRescheduledBooking,
-                      ...conditionalTravelBuffers,
                     },
                     tracingLogger,
                     calendarFetchMode

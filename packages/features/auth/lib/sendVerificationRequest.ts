@@ -32,7 +32,7 @@ const sendVerificationRequest = async ({
     to: identifier,
     subject: `Your sign-in link for ${APP_NAME}`,
     html: emailTemplate({
-      base_url: WEBAPP_URL,
+      base_url: webappUrl.origin,
       signin_url: url,
       email: identifier,
     }),
