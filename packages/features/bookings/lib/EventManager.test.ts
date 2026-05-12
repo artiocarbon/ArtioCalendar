@@ -23,6 +23,7 @@ import process from "node:process";
 import { CredentialRepository } from "@calcom/features/credentials/repositories/CredentialRepository";
 import { symmetricDecrypt } from "@calcom/lib/crypto";
 import type { DestinationCalendar } from "@calcom/prisma/client";
+import { SchedulingType } from "@calcom/prisma/enums";
 import type { CredentialForCalendarService } from "@calcom/types/Credential";
 import EventManager from "./EventManager";
 
@@ -623,6 +624,73 @@ describe("EventManager credential lookup methods", () => {
 
       expect(result).toMatchObject({ id: 22, type: "google_calendar" });
       expect(mockedCredentialRepository.findCredentialForCalendarServiceById).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("normalizeDestinationCalendarsForCreation", () => {
+    it("keeps distinct Google calendars for collective (joint) scheduling", () => {
+      eventManager = new EventManager({
+        credentials: [],
+        destinationCalendar: null,
+      });
+      const hostA = {
+        ...buildDestinationCalendar({
+          id: 1,
+          integration: "google_calendar",
+          externalId: "host-a@calendar.google.com",
+        }),
+        credentialId: 10,
+      };
+      const hostB = {
+        ...buildDestinationCalendar({
+          id: 2,
+          integration: "google_calendar",
+          externalId: "host-b@calendar.google.com",
+        }),
+        credentialId: 11,
+      };
+      const result = (
+        eventManager as unknown as {
+          normalizeDestinationCalendarsForCreation: (e: unknown) => DestinationCalendar[];
+        }
+      ).normalizeDestinationCalendarsForCreation({
+        destinationCalendar: [hostA, hostB],
+        schedulingType: SchedulingType.COLLECTIVE,
+      });
+      expect(result).toHaveLength(2);
+    });
+
+    it("dedupes multiple Google rows to one calendar for non-collective scheduling", () => {
+      eventManager = new EventManager({
+        credentials: [],
+        destinationCalendar: null,
+      });
+      const first = {
+        ...buildDestinationCalendar({
+          id: 1,
+          integration: "google_calendar",
+          externalId: "primary@calendar.google.com",
+        }),
+        credentialId: 5,
+      };
+      const second = {
+        ...buildDestinationCalendar({
+          id: 2,
+          integration: "google_calendar",
+          externalId: "secondary@calendar.google.com",
+        }),
+        credentialId: 5,
+      };
+      const result = (
+        eventManager as unknown as {
+          normalizeDestinationCalendarsForCreation: (e: unknown) => DestinationCalendar[];
+        }
+      ).normalizeDestinationCalendarsForCreation({
+        destinationCalendar: [first, second],
+        schedulingType: SchedulingType.ROUND_ROBIN,
+      });
+      expect(result).toHaveLength(1);
+      expect(result[0]?.externalId).toBe("primary@calendar.google.com");
     });
   });
 });

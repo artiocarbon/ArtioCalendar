@@ -1,14 +1,11 @@
-import { cloneDeep, merge } from "lodash";
-import { v5 as uuidv5 } from "uuid";
-import type { z } from "zod";
-
+import process from "node:process";
 import { getCalendar } from "@calcom/app-store/_utils/getCalendar";
 import { FAKE_DAILY_CREDENTIAL } from "@calcom/app-store/dailyvideo/lib/VideoApiAdapter";
 import { appKeysSchema as calVideoKeysSchema } from "@calcom/app-store/dailyvideo/zod";
 import { getLocationFromApp, MeetLocationType, MSTeamsLocationType } from "@calcom/app-store/locations";
 import getApps from "@calcom/app-store/utils";
-import { createEvent, updateEvent, deleteEvent } from "@calcom/features/calendars/lib/CalendarManager";
-import { createMeeting, updateMeeting, deleteMeeting } from "@calcom/features/conferencing/lib/videoClient";
+import { createEvent, deleteEvent, updateEvent } from "@calcom/features/calendars/lib/CalendarManager";
+import { createMeeting, deleteMeeting, updateMeeting } from "@calcom/features/conferencing/lib/videoClient";
 import { CredentialRepository } from "@calcom/features/credentials/repositories/CredentialRepository";
 import CrmManager from "@calcom/features/crmManager/crmManager";
 import CRMScheduler from "@calcom/features/crmManager/crmScheduler";
@@ -18,14 +15,15 @@ import { symmetricDecrypt } from "@calcom/lib/crypto";
 import { isDelegationCredential } from "@calcom/lib/delegationCredential";
 import logger from "@calcom/lib/logger";
 import {
+  getPiiFreeCalendarEvent,
+  getPiiFreeCredential,
   getPiiFreeDestinationCalendar,
   getPiiFreeUser,
-  getPiiFreeCredential,
-  getPiiFreeCalendarEvent,
 } from "@calcom/lib/piiFreeData";
 import { safeStringify } from "@calcom/lib/safeStringify";
 import { prisma } from "@calcom/prisma";
-import type { DestinationCalendar, BookingReference } from "@calcom/prisma/client";
+import type { BookingReference, DestinationCalendar } from "@calcom/prisma/client";
+import { SchedulingType } from "@calcom/prisma/enums";
 import { createdEventSchema } from "@calcom/prisma/zod-utils";
 import type { AdditionalInformation, CalendarEvent, NewCalendarEventType } from "@calcom/types/Calendar";
 import type { CredentialForCalendarService } from "@calcom/types/Credential";
@@ -36,6 +34,9 @@ import type {
   PartialBooking,
   PartialReference,
 } from "@calcom/types/EventManager";
+import { cloneDeep, merge } from "lodash";
+import { v5 as uuidv5 } from "uuid";
+import type { z } from "zod";
 
 const log = logger.getSubLogger({ prefix: ["EventManager"] });
 const CALENDSO_ENCRYPTION_KEY = process.env.CALENDSO_ENCRYPTION_KEY || "";
@@ -246,6 +247,47 @@ export default class EventManager {
     }
 
     return matches;
+  }
+
+  /**
+   * Single bookings attach one Google destination per organizer; duplicate google_calendar rows were skipped
+   * to avoid creating the same event twice (see comment on GCal below).
+   * Collective (joint) bookings must create one third-party event per host calendar so every host receives the
+   * meeting and providers can emit invitations/scheduling for each organizer connection.
+   */
+  private normalizeDestinationCalendarsForCreation(event: CalendarEvent): DestinationCalendar[] {
+    const calendars = event.destinationCalendar ?? [];
+
+    if (event.schedulingType !== SchedulingType.COLLECTIVE) {
+      let gCalAdded = false;
+      return calendars.reduce((destinationCals, cal) => {
+        if (cal.integration === "google_calendar") {
+          if (gCalAdded) {
+            return destinationCals;
+          }
+          gCalAdded = true;
+          destinationCals.push(cal);
+        } else {
+          destinationCals.push(cal);
+        }
+        return destinationCals;
+      }, [] as DestinationCalendar[]);
+    }
+
+    const seen = new Set<string>();
+    const unique: DestinationCalendar[] = [];
+    for (const cal of calendars) {
+      const key = [
+        cal.credentialId ?? "",
+        cal.delegationCredentialId ?? "",
+        cal.externalId ?? "",
+        cal.integration,
+      ].join(":");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push(cal);
+    }
+    return unique;
   }
 
   private updateMSTeamsVideoCallData(
@@ -891,26 +933,10 @@ export default class EventManager {
 
     if (event.destinationCalendar && event.destinationCalendar.length > 0) {
       let eventCreated = false;
-      // Since GCal pushes events to multiple calendars we only want to create one event per booking
-      let gCalAdded = false;
-      const destinationCalendars: DestinationCalendar[] = event.destinationCalendar.reduce(
-        (destinationCals, cal) => {
-          if (cal.integration === "google_calendar") {
-            if (gCalAdded) {
-              return destinationCals;
-            } else {
-              gCalAdded = true;
-              destinationCals.push(cal);
-            }
-          } else {
-            destinationCals.push(cal);
-          }
-          return destinationCals;
-        },
-        [] as DestinationCalendar[]
-      );
+      const isCollective = event.schedulingType === SchedulingType.COLLECTIVE;
+      const destinationCalendars = this.normalizeDestinationCalendarsForCreation(event);
       for (const destination of destinationCalendars) {
-        if (eventCreated) break;
+        if (!isCollective && eventCreated) break;
         log.silly("Creating Calendar event", JSON.stringify({ destination }));
         if (destination.credentialId || destination.delegationCredentialId) {
           let credential = getCredential({
@@ -959,7 +985,9 @@ export default class EventManager {
             const createdEvent = await createEvent(credential, event, destination.externalId);
             if (createdEvent) {
               createdEvents.push(createdEvent);
-              eventCreated = true;
+              if (!isCollective) {
+                eventCreated = true;
+              }
             }
           }
         } else {
@@ -1102,8 +1130,7 @@ export default class EventManager {
     booking: PartialBooking,
     newBookingId?: number
   ): Promise<Array<EventResult<NewCalendarEventType>>> {
-    let calendarReference: PartialReference[] | undefined = undefined,
-      credential;
+    let calendarReference: PartialReference[] | undefined, credential;
     log.silly("updateAllCalendarEvents", JSON.stringify({ event, booking, newBookingId }));
     try {
       // If a newBookingId is given, update that calendar event
