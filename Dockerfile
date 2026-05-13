@@ -64,6 +64,7 @@ ENV NODE_ENV=production
 COPY package.json .yarnrc.yml turbo.json i18n.json ./
 COPY .yarn ./.yarn
 COPY --from=builder /calcom/yarn.lock ./yarn.lock
+# Large tree: COPY can sit here a long time with no log progress (monorepo node_modules).
 COPY --from=builder /calcom/node_modules ./node_modules
 COPY --from=builder /calcom/packages ./packages
 COPY --from=builder /calcom/apps/web ./apps/web
