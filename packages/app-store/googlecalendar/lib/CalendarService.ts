@@ -22,9 +22,9 @@ import type { CredentialForCalendarServiceWithEmail } from "@calcom/types/Creden
 import type { calendar_v3 } from "@googleapis/calendar";
 import type { GaxiosResponse } from "googleapis-common";
 import { RRule } from "rrule";
-
 import { AxiosLikeResponseToFetchResponse } from "../../_utils/oauth/AxiosLikeResponseToFetchResponse";
 import { CalendarAuth } from "./CalendarAuth";
+import { withGoogleCalendarRateLimitRetry } from "./googleCalendarRateLimitRetry";
 
 type FreeBusyArgs = { timeMin: string; timeMax: string; items: { id: string }[] };
 
@@ -114,6 +114,10 @@ class GoogleCalendarService implements Calendar {
 
   public getCredentialId() {
     return this.credential.id;
+  }
+
+  private withRateLimitRetry<T>(operation: () => Promise<T>): Promise<T> {
+    return withGoogleCalendarRateLimitRetry(operation, this.log);
   }
 
   public async authedCalendar(): Promise<calendar_v3.Calendar> {
@@ -241,10 +245,12 @@ class GoogleCalendarService implements Calendar {
       let recurringEventId = null;
       if (calEvent.existingRecurringEvent) {
         recurringEventId = calEvent.existingRecurringEvent.recurringEventId;
-        const recurringEventInstances = await calendar.events.instances({
-          calendarId: selectedCalendar,
-          eventId: calEvent.existingRecurringEvent.recurringEventId,
-        });
+        const recurringEventInstances = await this.withRateLimitRetry(() =>
+          calendar.events.instances({
+            calendarId: selectedCalendar,
+            eventId: calEvent.existingRecurringEvent.recurringEventId,
+          })
+        );
         if (recurringEventInstances.data.items) {
           // Compare timestamps directly for more reliable and faster matching
           const calComEventStartTimeMs = new Date(calEvent.startTime).getTime();
@@ -265,27 +271,31 @@ class GoogleCalendarService implements Calendar {
               safeStringify({ selectedCalendar, credentialId })
             );
           }
-          await calendar.events.patch({
-            calendarId: selectedCalendar,
-            eventId: event.id || "",
-            requestBody: {
-              location: getLocation({
-                videoCallData: calEvent.videoCallData,
-                additionalInformation: calEvent.additionalInformation,
-                location: calEvent.location,
-                uid: calEvent.uid,
-              }),
-              description: calEvent.calendarDescription,
-            },
-          });
+          await this.withRateLimitRetry(() =>
+            calendar.events.patch({
+              calendarId: selectedCalendar,
+              eventId: event.id || "",
+              requestBody: {
+                location: getLocation({
+                  videoCallData: calEvent.videoCallData,
+                  additionalInformation: calEvent.additionalInformation,
+                  location: calEvent.location,
+                  uid: calEvent.uid,
+                }),
+                description: calEvent.calendarDescription,
+              },
+            })
+          );
         }
       } else {
-        const eventResponse = await calendar.events.insert({
-          calendarId: selectedCalendar,
-          requestBody: payload,
-          conferenceDataVersion: 1,
-          sendUpdates: "none",
-        });
+        const eventResponse = await this.withRateLimitRetry(() =>
+          calendar.events.insert({
+            calendarId: selectedCalendar,
+            requestBody: payload,
+            conferenceDataVersion: 1,
+            sendUpdates: "none",
+          })
+        );
         event = eventResponse.data;
         if (event.recurrence) {
           if (event.recurrence.length > 0) {
@@ -296,26 +306,28 @@ class GoogleCalendarService implements Calendar {
       }
 
       if (event && event.id && event.hangoutLink) {
-        await calendar.events.patch({
-          // Update the same event but this time we know the hangout link
-          calendarId: selectedCalendar,
-          eventId: event.id || "",
-          requestBody: {
-            description: getRichDescription({
-              ...calEvent,
-              additionalInformation: { hangoutLink: event.hangoutLink },
-            }),
-            location: getLocation({
-              videoCallData: calEvent.videoCallData,
-              additionalInformation: {
-                ...calEvent.additionalInformation,
-                hangoutLink: event.hangoutLink,
-              },
-              location: calEvent.location,
-              uid: calEvent.uid,
-            }),
-          },
-        });
+        await this.withRateLimitRetry(() =>
+          calendar.events.patch({
+            // Update the same event but this time we know the hangout link
+            calendarId: selectedCalendar,
+            eventId: event.id || "",
+            requestBody: {
+              description: getRichDescription({
+                ...calEvent,
+                additionalInformation: { hangoutLink: event.hangoutLink },
+              }),
+              location: getLocation({
+                videoCallData: calEvent.videoCallData,
+                additionalInformation: {
+                  ...calEvent.additionalInformation,
+                  hangoutLink: event.hangoutLink,
+                },
+                location: calEvent.location,
+                uid: calEvent.uid,
+              }),
+            },
+          })
+        );
       }
 
       return {
@@ -349,10 +361,12 @@ class GoogleCalendarService implements Calendar {
     selectedCalendar: string,
     calendar: calendar_v3.Calendar
   ): Promise<calendar_v3.Schema$Event> {
-    const recurringEventInstances = await calendar.events.instances({
-      calendarId: selectedCalendar,
-      eventId: recurringEventId || "",
-    });
+    const recurringEventInstances = await this.withRateLimitRetry(() =>
+      calendar.events.instances({
+        calendarId: selectedCalendar,
+        eventId: recurringEventId || "",
+      })
+    );
 
     if (recurringEventInstances.data.items) {
       return recurringEventInstances.data.items[0];
@@ -402,14 +416,16 @@ class GoogleCalendarService implements Calendar {
         : undefined) || "primary";
 
     try {
-      const evt = await calendar.events.update({
-        calendarId: selectedCalendar,
-        eventId: uid,
-        sendNotifications: true,
-        sendUpdates: "none",
-        requestBody: payload,
-        conferenceDataVersion: 1,
-      });
+      const evt = await this.withRateLimitRetry(() =>
+        calendar.events.update({
+          calendarId: selectedCalendar,
+          eventId: uid,
+          sendNotifications: true,
+          sendUpdates: "none",
+          requestBody: payload,
+          conferenceDataVersion: 1,
+        })
+      );
 
       this.log.debug("Updated Google Calendar Event", {
         startTime: evt?.data.start,
@@ -417,26 +433,28 @@ class GoogleCalendarService implements Calendar {
       });
 
       if (evt && evt.data.id && evt.data.hangoutLink && event.location === MeetLocationType) {
-        await calendar.events.patch({
-          // Update the same event but this time we know the hangout link
-          calendarId: selectedCalendar,
-          eventId: evt.data.id || "",
-          requestBody: {
-            description: getRichDescription({
-              ...event,
-              additionalInformation: { hangoutLink: evt.data.hangoutLink },
-            }),
-            location: getLocation({
-              videoCallData: event.videoCallData,
-              additionalInformation: {
-                ...event.additionalInformation,
-                hangoutLink: evt.data.hangoutLink,
-              },
-              location: event.location,
-              uid: event.uid,
-            }),
-          },
-        });
+        await this.withRateLimitRetry(() =>
+          calendar.events.patch({
+            // Update the same event but this time we know the hangout link
+            calendarId: selectedCalendar,
+            eventId: evt.data.id || "",
+            requestBody: {
+              description: getRichDescription({
+                ...event,
+                additionalInformation: { hangoutLink: evt.data.hangoutLink },
+              }),
+              location: getLocation({
+                videoCallData: event.videoCallData,
+                additionalInformation: {
+                  ...event.additionalInformation,
+                  hangoutLink: evt.data.hangoutLink,
+                },
+                location: event.location,
+                uid: event.uid,
+              }),
+            },
+          })
+        );
         return {
           uid: "",
           ...evt.data,
@@ -466,12 +484,14 @@ class GoogleCalendarService implements Calendar {
     const selectedCalendar = externalCalendarId || "primary";
 
     try {
-      const event = await calendar.events.delete({
-        calendarId: selectedCalendar,
-        eventId: uid,
-        sendNotifications: false,
-        sendUpdates: "none",
-      });
+      const event = await this.withRateLimitRetry(() =>
+        calendar.events.delete({
+          calendarId: selectedCalendar,
+          eventId: uid,
+          sendNotifications: false,
+          sendUpdates: "none",
+        })
+      );
       return event?.data;
     } catch (error) {
       this.log.error(
@@ -494,7 +514,10 @@ class GoogleCalendarService implements Calendar {
     log.debug("fetchAvailability", safeStringify({ requestBody }));
     const calendar = await this.authedCalendar();
     const apiResponse = await this.auth.authManager.request(
-      async () => new AxiosLikeResponseToFetchResponse(await calendar.freebusy.query({ requestBody }))
+      async () =>
+        new AxiosLikeResponseToFetchResponse(
+          await this.withRateLimitRetry(() => calendar.freebusy.query({ requestBody }))
+        )
     );
     return apiResponse.json;
   }
@@ -676,16 +699,18 @@ class GoogleCalendarService implements Calendar {
           let pageToken: string | undefined;
 
           do {
-            const response = await calendar.events.list({
-              calendarId,
-              timeMin,
-              timeMax,
-              singleEvents: true,
-              showDeleted: false,
-              maxResults: 2500,
-              pageToken,
-              fields: "items(status,transparency,eventType,start,end),nextPageToken",
-            });
+            const response = await this.withRateLimitRetry(() =>
+              calendar.events.list({
+                calendarId,
+                timeMin,
+                timeMax,
+                singleEvents: true,
+                showDeleted: false,
+                maxResults: 2500,
+                pageToken,
+                fields: "items(status,transparency,eventType,start,end),nextPageToken",
+              })
+            );
 
             const events = response.data.items ?? [];
             for (const event of events) {
@@ -697,7 +722,8 @@ class GoogleCalendarService implements Calendar {
 
               const start =
                 event.start?.dateTime || (event.start?.date ? normalizeDateToIso(event.start.date) : null);
-              const end = event.end?.dateTime || (event.end?.date ? normalizeDateToIso(event.end.date) : null);
+              const end =
+                event.end?.dateTime || (event.end?.date ? normalizeDateToIso(event.end.date) : null);
 
               if (!start || !end) continue;
               if (new Date(start) >= new Date(end)) continue;
@@ -921,11 +947,13 @@ class GoogleCalendarService implements Calendar {
 
     try {
       do {
-        const response: any = await calendar.calendarList.list({
-          fields: `items(${fields.join(",")}),nextPageToken`,
-          pageToken,
-          maxResults: 250, // 250 is max
-        });
+        const response: any = await this.withRateLimitRetry(() =>
+          calendar.calendarList.list({
+            fields: `items(${fields.join(",")}),nextPageToken`,
+            pageToken,
+            maxResults: 250, // 250 is max
+          })
+        );
 
         allCalendars = [...allCalendars, ...(response.data.items ?? [])];
         pageToken = response.data.nextPageToken;
@@ -941,9 +969,11 @@ class GoogleCalendarService implements Calendar {
   async getPrimaryCalendar(_calendar?: calendar_v3.Calendar): Promise<calendar_v3.Schema$Calendar | null> {
     try {
       const calendar = _calendar ?? (await this.authedCalendar());
-      const response = await calendar.calendars.get({
-        calendarId: "primary",
-      });
+      const response = await this.withRateLimitRetry(() =>
+        calendar.calendars.get({
+          calendarId: "primary",
+        })
+      );
       return response.data;
     } catch (error) {
       // should not be reached because Google Cal always has a primary cal

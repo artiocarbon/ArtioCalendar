@@ -60,7 +60,7 @@ export const getCalendarsEventsWithTimezones = async (
       if (!isADelegationCredential) {
         // It was done to fix the secondary calendar connections from always checking the conflicts even if intentional no calendars are selected.
         // https://github.com/calcom/cal.com/issues/8929
-        log.error(
+        log.warn(
           `No selected calendars for non DWD credential: Skipping getAvailability call for credential ${credential?.id}`
         );
         return [];
@@ -172,7 +172,7 @@ const getCalendarsEvents = async (
       if (!isADelegationCredential) {
         // It was done to fix the secondary calendar connections from always checking the conflicts even if intentional no calendars are selected.
         // https://github.com/calcom/cal.com/issues/8929
-        log.error(
+        log.warn(
           `No selected calendars for non DWD credential: Skipping getAvailability call for credential ${credential?.id}`
         );
         return [];
