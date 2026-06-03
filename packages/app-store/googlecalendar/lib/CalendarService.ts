@@ -244,11 +244,12 @@ class GoogleCalendarService implements Calendar {
       let event: calendar_v3.Schema$Event | undefined;
       let recurringEventId = null;
       if (calEvent.existingRecurringEvent) {
-        recurringEventId = calEvent.existingRecurringEvent.recurringEventId;
+        const existingRecurringEvent = calEvent.existingRecurringEvent;
+        recurringEventId = existingRecurringEvent.recurringEventId;
         const recurringEventInstances = await this.withRateLimitRetry(() =>
           calendar.events.instances({
             calendarId: selectedCalendar,
-            eventId: calEvent.existingRecurringEvent.recurringEventId,
+            eventId: existingRecurringEvent.recurringEventId,
           })
         );
         if (recurringEventInstances.data.items) {
@@ -271,21 +272,24 @@ class GoogleCalendarService implements Calendar {
               safeStringify({ selectedCalendar, credentialId })
             );
           }
-          await this.withRateLimitRetry(() =>
-            calendar.events.patch({
-              calendarId: selectedCalendar,
-              eventId: event.id || "",
-              requestBody: {
-                location: getLocation({
-                  videoCallData: calEvent.videoCallData,
-                  additionalInformation: calEvent.additionalInformation,
-                  location: calEvent.location,
-                  uid: calEvent.uid,
-                }),
-                description: calEvent.calendarDescription,
-              },
-            })
-          );
+          const recurringInstanceEventId = event?.id;
+          if (recurringInstanceEventId) {
+            await this.withRateLimitRetry(() =>
+              calendar.events.patch({
+                calendarId: selectedCalendar,
+                eventId: recurringInstanceEventId,
+                requestBody: {
+                  location: getLocation({
+                    videoCallData: calEvent.videoCallData,
+                    additionalInformation: calEvent.additionalInformation,
+                    location: calEvent.location,
+                    uid: calEvent.uid,
+                  }),
+                  description: calEvent.calendarDescription,
+                },
+              })
+            );
+          }
         }
       } else {
         const eventResponse = await this.withRateLimitRetry(() =>
@@ -305,22 +309,24 @@ class GoogleCalendarService implements Calendar {
         }
       }
 
-      if (event && event.id && event.hangoutLink) {
+      const hangoutLink = event?.hangoutLink;
+      const eventIdForHangoutPatch = event?.id;
+      if (eventIdForHangoutPatch && hangoutLink) {
         await this.withRateLimitRetry(() =>
           calendar.events.patch({
             // Update the same event but this time we know the hangout link
             calendarId: selectedCalendar,
-            eventId: event.id || "",
+            eventId: eventIdForHangoutPatch,
             requestBody: {
               description: getRichDescription({
                 ...calEvent,
-                additionalInformation: { hangoutLink: event.hangoutLink },
+                additionalInformation: { hangoutLink },
               }),
               location: getLocation({
                 videoCallData: calEvent.videoCallData,
                 additionalInformation: {
                   ...calEvent.additionalInformation,
-                  hangoutLink: event.hangoutLink,
+                  hangoutLink,
                 },
                 location: calEvent.location,
                 uid: calEvent.uid,
@@ -432,7 +438,8 @@ class GoogleCalendarService implements Calendar {
         endTime: evt?.data.end,
       });
 
-      if (evt && evt.data.id && evt.data.hangoutLink && event.location === MeetLocationType) {
+      const updateHangoutLink = evt?.data.hangoutLink;
+      if (evt?.data.id && updateHangoutLink && event.location === MeetLocationType) {
         await this.withRateLimitRetry(() =>
           calendar.events.patch({
             // Update the same event but this time we know the hangout link
@@ -441,13 +448,13 @@ class GoogleCalendarService implements Calendar {
             requestBody: {
               description: getRichDescription({
                 ...event,
-                additionalInformation: { hangoutLink: evt.data.hangoutLink },
+                additionalInformation: { hangoutLink: updateHangoutLink },
               }),
               location: getLocation({
                 videoCallData: event.videoCallData,
                 additionalInformation: {
                   ...event.additionalInformation,
-                  hangoutLink: evt.data.hangoutLink,
+                  hangoutLink: updateHangoutLink,
                 },
                 location: event.location,
                 uid: event.uid,

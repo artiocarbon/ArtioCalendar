@@ -51,12 +51,13 @@ export async function withGoogleCalendarRateLimitRetry<T>(
         throw error;
       }
 
+      const retryDetails = safeStringify({
+        attempt: attempt + 1,
+        maxAttempts: maxAttempts - 1,
+      });
       log.warn(
         `Google Calendar rate limit exceeded, retrying in ${delayMs / 1000}s`,
-        safeStringify({
-          attempt: attempt + 1,
-          maxAttempts: maxAttempts - 1,
-        })
+        typeof retryDetails === "string" ? retryDetails : undefined
       );
       await sleep(delayMs);
     }
