@@ -20,11 +20,14 @@ vi.mock("@calcom/features/watchlist/lib/telemetry", () => ({
 }));
 
 import process from "node:process";
+import { MeetLocationType } from "@calcom/app-store/locations";
 import { CredentialRepository } from "@calcom/features/credentials/repositories/CredentialRepository";
 import { symmetricDecrypt } from "@calcom/lib/crypto";
 import type { DestinationCalendar } from "@calcom/prisma/client";
 import { SchedulingType } from "@calcom/prisma/enums";
+import type { CalendarEvent } from "@calcom/types/Calendar";
 import type { CredentialForCalendarService } from "@calcom/types/Credential";
+import { cloneDeep } from "lodash";
 import EventManager from "./EventManager";
 
 vi.mock("@calcom/prisma", () => ({
@@ -39,6 +42,16 @@ vi.mock("@calcom/features/credentials/repositories/CredentialRepository", () => 
   CredentialRepository: {
     findCredentialForCalendarServiceById: vi.fn(),
   },
+}));
+
+const { mockCreateEvent } = vi.hoisted(() => ({
+  mockCreateEvent: vi.fn(),
+}));
+
+vi.mock("@calcom/features/calendars/lib/CalendarManager", () => ({
+  createEvent: mockCreateEvent,
+  updateEvent: vi.fn(),
+  deleteEvent: vi.fn(),
 }));
 
 vi.mock("@calcom/app-store/delegationCredential", () => ({
@@ -691,6 +704,131 @@ describe("EventManager credential lookup methods", () => {
       });
       expect(result).toHaveLength(1);
       expect(result[0]?.externalId).toBe("primary@calendar.google.com");
+    });
+  });
+
+  describe("collective Google Meet link reuse", () => {
+    const hostACredential = buildCalendarCredential({ id: 10, userId: 1 });
+    const hostBCredential = buildCalendarCredential({ id: 11, userId: 2 });
+
+    const hostADestination = {
+      ...buildDestinationCalendar({
+        id: 1,
+        integration: "google_calendar",
+        externalId: "host-a@calendar.google.com",
+      }),
+      credentialId: 10,
+      userId: 1,
+    };
+    const hostBDestination = {
+      ...buildDestinationCalendar({
+        id: 2,
+        integration: "google_calendar",
+        externalId: "host-b@calendar.google.com",
+      }),
+      credentialId: 11,
+      userId: 2,
+    };
+
+    const baseCollectiveMeetEvent = {
+      title: "Team meeting",
+      startTime: "2026-07-06T14:30:00.000Z",
+      endTime: "2026-07-06T15:00:00.000Z",
+      location: MeetLocationType,
+      schedulingType: SchedulingType.COLLECTIVE,
+      conferenceData: {
+        createRequest: {
+          requestId: "test-request-id",
+        },
+      },
+      destinationCalendar: [hostADestination, hostBDestination],
+      organizer: {
+        id: 1,
+        name: "Host A",
+        email: "host-a@example.com",
+        timeZone: "America/New_York",
+        language: { translate: (key: string) => key, locale: "en" },
+      },
+      attendees: [],
+    } satisfies Partial<CalendarEvent>;
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+      eventManager = new EventManager({
+        credentials: [hostACredential, hostBCredential],
+        destinationCalendar: null,
+      });
+    });
+
+    it("reuses the first Google Meet link for subsequent collective host calendars", async () => {
+      const firstMeetLink = "https://meet.google.com/abc-defg-hij";
+      const secondMeetLink = "https://meet.google.com/xyz-uvwx-rst";
+      const createEventSnapshots: CalendarEvent[] = [];
+
+      mockCreateEvent.mockImplementation(async (_credential, event: CalendarEvent) => {
+        createEventSnapshots.push(cloneDeep(event));
+
+        if (createEventSnapshots.length === 1) {
+          return {
+            appName: "google-calendar",
+            type: "google_calendar",
+            success: true,
+            uid: "event-a",
+            createdEvent: { id: "event-a", hangoutLink: firstMeetLink },
+            originalEvent: event,
+            credentialId: 10,
+          };
+        }
+
+        return {
+          appName: "google-calendar",
+          type: "google_calendar",
+          success: true,
+          uid: "event-b",
+          createdEvent: { id: "event-b", hangoutLink: secondMeetLink },
+          originalEvent: event,
+          credentialId: 11,
+        };
+      });
+
+      const collectiveEvent = { ...baseCollectiveMeetEvent } as CalendarEvent;
+
+      await (
+        eventManager as unknown as {
+          createAllCalendarEvents: (event: CalendarEvent) => Promise<unknown[]>;
+        }
+      ).createAllCalendarEvents(collectiveEvent);
+
+      expect(mockCreateEvent).toHaveBeenCalledTimes(2);
+      expect(createEventSnapshots[0]?.conferenceData).toBeDefined();
+      expect(createEventSnapshots[0]?.additionalInformation?.hangoutLink).toBeUndefined();
+      expect(createEventSnapshots[1]?.conferenceData).toBeUndefined();
+      expect(createEventSnapshots[1]?.additionalInformation?.hangoutLink).toBe(firstMeetLink);
+      expect(collectiveEvent.additionalInformation?.hangoutLink).toBe(firstMeetLink);
+      expect(collectiveEvent.conferenceData).toBeUndefined();
+    });
+
+    it("strips conferenceData when applying a shared Google Meet link", () => {
+      const event = {
+        location: MeetLocationType,
+        conferenceData: {
+          createRequest: {
+            requestId: "test-request-id",
+          },
+        },
+      } as CalendarEvent;
+
+      (
+        eventManager as unknown as {
+          applySharedGoogleMeetLinkForCollectiveCalendarEvent: (
+            event: CalendarEvent,
+            hangoutLink: string
+          ) => void;
+        }
+      ).applySharedGoogleMeetLinkForCollectiveCalendarEvent(event, "https://meet.google.com/shared-link");
+
+      expect(event.conferenceData).toBeUndefined();
+      expect(event.additionalInformation?.hangoutLink).toBe("https://meet.google.com/shared-link");
     });
   });
 });

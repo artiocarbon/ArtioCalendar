@@ -255,6 +255,44 @@ export default class EventManager {
    * Collective (joint) bookings must create one third-party event per host calendar so every host receives the
    * meeting and providers can emit invitations/scheduling for each organizer connection.
    */
+  /**
+   * Collective bookings create one Google Calendar event per host. Re-requesting conferenceData on each
+   * insert generates a distinct Google Meet link per host calendar. Reuse the first Meet link instead.
+   */
+  private applySharedGoogleMeetLinkForCollectiveCalendarEvent(
+    event: CalendarEvent,
+    hangoutLink: string
+  ): void {
+    event.additionalInformation = {
+      ...event.additionalInformation,
+      hangoutLink,
+    };
+    event.conferenceData = undefined;
+  }
+
+  private extractGoogleMeetHangoutLinkFromCreateResult(
+    result: EventResult<NewCalendarEventType> | undefined
+  ): string | undefined {
+    const created = result?.createdEvent;
+    if (!created) {
+      return undefined;
+    }
+    return created.hangoutLink || created.additionalInfo?.hangoutLink || undefined;
+  }
+
+  private getGoogleMeetUrlFromReferences(references: PartialReference[]): string | undefined {
+    const meetReference = references.find(
+      (ref) =>
+        ref.type === "google_meet_video" ||
+        (ref.type.includes("_calendar") && ref.meetingUrl?.includes("meet.google.com"))
+    );
+    return meetReference?.meetingUrl ?? undefined;
+  }
+
+  private shouldReuseCollectiveGoogleMeetLink(event: CalendarEvent): boolean {
+    return event.schedulingType === SchedulingType.COLLECTIVE && event.location === MeetLocationType;
+  }
+
   private normalizeDestinationCalendarsForCreation(event: CalendarEvent): DestinationCalendar[] {
     const calendars = event.destinationCalendar ?? [];
 
@@ -914,6 +952,29 @@ export default class EventManager {
    */
   private async createAllCalendarEvents(event: CalendarEvent) {
     let createdEvents: EventResult<NewCalendarEventType>[] = [];
+    const isCollective = event.schedulingType === SchedulingType.COLLECTIVE;
+    const reuseCollectiveGoogleMeetLink = this.shouldReuseCollectiveGoogleMeetLink(event);
+    let sharedGoogleMeetHangoutLink: string | undefined;
+
+    const handleCreatedCalendarEvent = (
+      createdEvent: EventResult<NewCalendarEventType> | undefined,
+      credentialType: string | undefined
+    ) => {
+      if (!createdEvent) {
+        return;
+      }
+      createdEvents.push(createdEvent);
+      if (
+        reuseCollectiveGoogleMeetLink &&
+        credentialType === "google_calendar" &&
+        !sharedGoogleMeetHangoutLink
+      ) {
+        sharedGoogleMeetHangoutLink = this.extractGoogleMeetHangoutLinkFromCreateResult(createdEvent);
+        if (sharedGoogleMeetHangoutLink) {
+          this.applySharedGoogleMeetLinkForCollectiveCalendarEvent(event, sharedGoogleMeetHangoutLink);
+        }
+      }
+    };
 
     const fallbackToFirstCalendarInTheList = async () => {
       const [credential] = this.calendarCredentials.filter((cred) => !cred.type.endsWith("other_calendar"));
@@ -925,15 +986,13 @@ export default class EventManager {
         }
         const createdEvent = await createEvent(credential, event);
         log.silly("Created Calendar event using credential", safeStringify({ credential, createdEvent }));
-        if (createdEvent) {
-          createdEvents.push(createdEvent);
-        }
+        handleCreatedCalendarEvent(createdEvent, credential.type);
       }
     };
 
     if (event.destinationCalendar && event.destinationCalendar.length > 0) {
       let eventCreated = false;
-      const isCollective = event.schedulingType === SchedulingType.COLLECTIVE;
+
       const destinationCalendars = this.normalizeDestinationCalendarsForCreation(event);
       for (const destination of destinationCalendars) {
         if (!isCollective && eventCreated) break;
@@ -983,11 +1042,9 @@ export default class EventManager {
           }
           if (credential) {
             const createdEvent = await createEvent(credential, event, destination.externalId);
-            if (createdEvent) {
-              createdEvents.push(createdEvent);
-              if (!isCollective) {
-                eventCreated = true;
-              }
+            handleCreatedCalendarEvent(createdEvent, credential.type);
+            if (createdEvent && !isCollective) {
+              eventCreated = true;
             }
           }
         } else {
@@ -1027,8 +1084,11 @@ export default class EventManager {
                 firstConnectedCalendar: getPiiFreeCredential(firstCalendarCredential),
               })
             );
-            createdEvents.push(await createEvent(firstCalendarCredential, event));
-            eventCreated = true;
+            const createdEvent = await createEvent(firstCalendarCredential, event);
+            handleCreatedCalendarEvent(createdEvent, firstCalendarCredential.type);
+            if (createdEvent) {
+              eventCreated = true;
+            }
           }
         }
       }
@@ -1153,6 +1213,16 @@ export default class EventManager {
       if (calendarReference.length === 0) {
         return [];
       }
+
+      if (this.shouldReuseCollectiveGoogleMeetLink(event)) {
+        const existingMeetUrl = this.getGoogleMeetUrlFromReferences(
+          newBooking?.references.length ? newBooking.references : booking.references
+        );
+        if (existingMeetUrl) {
+          this.applySharedGoogleMeetLinkForCollectiveCalendarEvent(event, existingMeetUrl);
+        }
+      }
+
       // process all calendar references
       let result = [];
       for (const reference of calendarReference) {
