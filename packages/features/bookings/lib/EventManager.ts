@@ -277,7 +277,11 @@ export default class EventManager {
     if (!created) {
       return undefined;
     }
-    return created.hangoutLink || created.additionalInfo?.hangoutLink || undefined;
+    if (created.hangoutLink) {
+      return created.hangoutLink;
+    }
+    const hangoutLinkFromAdditionalInfo = created.additionalInfo?.hangoutLink;
+    return typeof hangoutLinkFromAdditionalInfo === "string" ? hangoutLinkFromAdditionalInfo : undefined;
   }
 
   private getGoogleMeetUrlFromReferences(references: PartialReference[]): string | undefined {
